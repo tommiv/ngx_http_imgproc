@@ -1,0 +1,11 @@
+static ngx_int_t OnProcessInit(ngx_cycle_t *cycle);
+static void      OnProcessDie(ngx_cycle_t *cycle);
+static ngx_int_t OnModuleInit(ngx_conf_t *cfg);
+static void*     OnConfigCreate(ngx_conf_t *cfg);
+static char*     OnConfigMerge(ngx_conf_t *cfg, void *parent, void *child);
+static ngx_int_t HeaderFilter(ngx_http_request_t *r);
+static ngx_int_t BodyFilter(ngx_http_request_t *r, ngx_chain_t *in);
+static ngx_int_t OnChunkAvailable(ngx_http_request_t *r, ngx_chain_t *in);
+static void      OnPeerClose(void* data);
+static char*     OnParseWatermarkPosition(ngx_conf_t* input, ngx_command_t* cmd, void* config);
+static char*     OnParseMaxTargetDims(ngx_conf_t* input, ngx_command_t* cmd, void* _cfg);
