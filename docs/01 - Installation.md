@@ -15,7 +15,7 @@ We will need openCV. Offsite instructions is build it from source.
 
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev webp
+    sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev webp libwebp-dev
         
 Download sources. You can do it with wget, but source stored on SourceForge which has it's own handler for downloads. Much easier to download it with your favorite browser and put to server via sftp client. Get your copy [here](http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.9/opencv-2.4.9.zip/download). I put mine into /var/opt/src/OpenCV.
     
