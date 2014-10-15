@@ -295,14 +295,7 @@ static ngx_int_t BodyFilter(ngx_http_request_t* r, ngx_chain_t* in) {
 
 	// Step 4: run processing
 	r->connection->buffered &= ~NGX_HTTP_IMAGE_BUFFERED;
-
-	u_char* dst = ngx_pnalloc(r->pool, r->unparsed_uri.len);
-	u_char* query = dst;
-	ngx_unescape_uri(&dst, &r->unparsed_uri.data, r->unparsed_uri.len, 0);
-	*dst = '\0';
-	char* extension = CopyNgxString(r->exten);
-	JobResult* result = RunJob(ctx->Image, ctx->Length, extension, (char*)query, conf);
-	free(extension);
+	JobResult* result = RunJob(ctx->Image, ctx->Length, r, conf);
 
 	// Step 5: check processing result
 	#ifdef IMP_DEBUG
@@ -333,20 +326,19 @@ static ngx_int_t BodyFilter(ngx_http_request_t* r, ngx_chain_t* in) {
 		char msg[44];
 		sprintf(msg, "imp::Job failed at step %d with code %d", result->Step, result->Code);
 		OutputErrorString(msg, r);
-		free(result);
 		return ngx_http_filter_finalize_request(r, &ngx_http_imgproc_module, httpCode);
 	}
 
 	// Step 6: initiate destructor
-	ngx_pool_cleanup_t* cln = ngx_pool_cleanup_add(r->pool, sizeof(PeerContext));
-	cln->handler = OnPeerClose;
-	cln->data = ctx;
-	ctx->ToDestruct = result->EncodedBytes;
+	// Not used anymore, but left here in case of
+	// ngx_pool_cleanup_t* cln = ngx_pool_cleanup_add(r->pool, sizeof(PeerContext));
+	// cln->handler = OnPeerClose;
+	// cln->data = ctx;
 
 	// Step 7: return response
 	ngx_buf_t* imgdata = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
-	imgdata->pos = result->EncodedBytes->data.ptr;
-	imgdata->last = result->EncodedBytes->data.ptr + result->Length;
+	imgdata->pos = result->EncodedBytes;
+	imgdata->last = result->EncodedBytes + result->Length;
 	imgdata->memory = 1;
 	imgdata->last_buf = 1;
 	r->headers_out.content_length_n = result->Length;
@@ -370,8 +362,6 @@ static ngx_int_t BodyFilter(ngx_http_request_t* r, ngx_chain_t* in) {
 		r->headers_out.content_type.data = (u_char*)content_type;
 		r->headers_out.content_type.len  = strlen(content_type);
 	}
-
-	free(result);
 
 	ngx_chain_t out;
 	out.buf = imgdata;
@@ -422,14 +412,6 @@ static ngx_int_t OnChunkAvailable(ngx_http_request_t* r, ngx_chain_t* in) {
     r->connection->buffered |= NGX_HTTP_IMAGE_BUFFERED;
 
     return NGX_AGAIN;
-}
-
-static void OnPeerClose(void* data) {
-	PeerContext* ctx = data;
-	if (ctx && ctx->ToDestruct) {
-		free(ctx->ToDestruct->data.ptr);
-		cvReleaseMat(&ctx->ToDestruct);
-	}
 }
 
 static char* OnParseWatermarkPosition(ngx_conf_t* input, ngx_command_t* cmd, void* _cfg) {

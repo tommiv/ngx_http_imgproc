@@ -225,10 +225,10 @@ int Watermark(IplImage* image, Config* config) {
 	return IMP_OK;
 }
 
-char* Info(IplImage* image) {
-	char* json = malloc(256 * sizeof(char));
+u_char* Info(IplImage* image, ngx_pool_t* pool) {
+	u_char* json = ngx_palloc(pool, 256 * sizeof(u_char));
 	sprintf(
-		json,
+		(char*)json,
 		"{"
 			"\"width\":%d,"
 			"\"height\":%d,"
@@ -241,12 +241,17 @@ char* Info(IplImage* image) {
 	return json;
 }
 
-JobResult* RunJob(u_char* blob, size_t size, char* extension, char* request, Config* config) {
+JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* config) {
+	// Unzip
+	u_char* tempbuf = ngx_pnalloc(req->pool, req->unparsed_uri.len);
+	u_char* request = tempbuf; // somehow ngx_unescape_uri corrupts passed buffer pointer
+	ngx_unescape_uri(&tempbuf, &req->unparsed_uri.data, req->unparsed_uri.len, 0);
+	*tempbuf = '\0';
+
 	#ifdef IMP_DEBUG
 		syslog(LOG_NOTICE, "imp::RunJob():%s", request);
 	#endif
 
-	// Unzip
 	char* crop    = NULL;
 	char* resize  = NULL;
 	char* quality = NULL;
@@ -256,7 +261,7 @@ JobResult* RunJob(u_char* blob, size_t size, char* extension, char* request, Con
 	char* filters[config->MaxFiltersCount];
 	int filterCount = 0;
 
-	JobResult* answer = (JobResult*)malloc(sizeof(JobResult));
+	JobResult* answer = (JobResult*)ngx_palloc(req->pool, sizeof(JobResult));
 	answer->Code = -1;
 	answer->Length = 0;
 	answer->Step = IMP_STEP_START;
@@ -264,7 +269,7 @@ JobResult* RunJob(u_char* blob, size_t size, char* extension, char* request, Con
 
 	char* token;
 	char* context = NULL;
-	strtok_r(request, "?", &context);
+	strtok_r((char*)request, "?", &context);
 	
 	char* params = strtok_r(NULL, "?", &context);
 	if (!params) {
@@ -340,14 +345,15 @@ JobResult* RunJob(u_char* blob, size_t size, char* extension, char* request, Con
 	// alternative exit point
 	answer->Step = IMP_STEP_INFO;
 	if (info) {
-		char* json = Info(image);
+		u_char* json = Info(image, req->pool);
 		answer->Code = IMP_OK;
-		answer->Length = strlen(json);
-		answer->EncodedBytes = cvCreateMat(1, answer->Length, CV_8U);
+		answer->Length = strlen((char*)json);
+		answer->EncodedBytes = json;
 		answer->MIME = IMP_MIME_JSON;
-		cvSetData(answer->EncodedBytes, json, answer->Length);
 		goto finalize;
 	}
+
+	char* extension = CopyNgxString(req->exten);
 
 	int coderopt[3];
 	coderopt[2] = 0;
@@ -401,23 +407,32 @@ JobResult* RunJob(u_char* blob, size_t size, char* extension, char* request, Con
 
 	if (answer->MIME == IMP_MIME_WEBP) {
 		#ifdef IMP_FEATURE_WEBP
-			uint8_t* output;
+			uint8_t* encoded;
 			CvRect dim = cvGetImageROI(image);
 			// it's time for meh
 			if (image->nChannels == 4) {
-				answer->Length = WebPEncodeBGRA((uint8_t*)image->imageData, dim.width, dim.height, image->widthStep, coderopt[1], &output);
+				answer->Length = WebPEncodeBGRA((uint8_t*)image->imageData, dim.width, dim.height, image->widthStep, coderopt[1], &encoded);
 			} else {
-				answer->Length = WebPEncodeBGR((uint8_t*)image->imageData, dim.width, dim.height, image->widthStep, coderopt[1], &output);
+				answer->Length = WebPEncodeBGR((uint8_t*)image->imageData, dim.width, dim.height, image->widthStep, coderopt[1], &encoded);
 			}
-			answer->EncodedBytes = cvCreateMat(1, answer->Length, CV_8U);
-			cvSetData(answer->EncodedBytes, output, answer->Length);
+
+			u_char* output = ngx_palloc(req->pool, answer->Length);
+			memcpy(output, encoded, answer->Length);
+			free(encoded);
+			answer->EncodedBytes = output;
 		#endif
 	} else {
 		char formatcode[6];
 		sprintf(formatcode, ".%s", format);
-		answer->EncodedBytes = cvEncodeImage(formatcode, image, coderopt);
-		answer->Length = answer->EncodedBytes->rows * answer->EncodedBytes->cols;
+		CvMat* encoded = cvEncodeImage(formatcode, image, coderopt);
+		answer->Length = encoded->rows * encoded->cols;
+		u_char* output = ngx_palloc(req->pool, answer->Length);
+		memcpy(output, encoded->data.ptr, answer->Length);
+		cvReleaseMat(&encoded);
+		answer->EncodedBytes = output;
 	}
+
+	free(extension);
 
 	goto finalize;
 

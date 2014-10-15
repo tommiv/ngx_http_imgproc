@@ -54,14 +54,12 @@
 // Various openCV-related const
 #define CV_HUE_WHEEL_RESOLUTION 180
 
-// I used CvMat* to deliver data back in module. Well, this is annoying and introduces circular dependency.
-// But as well this eliminates copy memory step, and still allow to clean up peer properly.
 typedef struct {
-    int       Code;
-    int       Step;
-    CvMat*    EncodedBytes;
-    size_t    Length;
-    int       MIME;
+    int     Code;
+    int     Step;
+    u_char* EncodedBytes;
+    size_t  Length;
+    int     MIME;
 } JobResult;
 
 typedef struct {
