@@ -6,30 +6,34 @@ static const struct {
 	char* Name;
 	int   (*FilterCallback)(IplImage**, char*);
 	int   Experimental;
+	int   Destructive;
 } CallbackMap[] = {
-	{ "flip"     , Flip     , 0 },
-	{ "rotate"   , Rotate   , 0 },
-	{ "modulate" , Modulate , 0 },
-	{ "colorize" , Colorize , 0 },
-	{ "blur"     , Blur     , 0 },
-	{ "gamma"    , Gamma    , 0 },
-	{ "vignette" , Vignette , 1 },
-	{ "gotham"   , Gotham   , 1 },
-	{ "lomo"     , Lomo     , 1 },
-	{ "kelvin"   , Kelvin   , 1 },
-	{ "rainbow"  , Rainbow  , 1 },
-	{ "scanline" , Scanline , 1 },
+	{ "flip"     , Flip     , 0, 0 },
+	{ "rotate"   , Rotate   , 0, 0 },
+	{ "modulate" , Modulate , 0, 0 },
+	{ "colorize" , Colorize , 0, 0 },
+	{ "blur"     , Blur     , 0, 1 },
+	{ "gamma"    , Gamma    , 0, 0 },
+	{ "vignette" , Vignette , 1, 1 },
+	{ "gotham"   , Gotham   , 1, 0 },
+	{ "lomo"     , Lomo     , 1, 0 },
+	{ "kelvin"   , Kelvin   , 1, 0 },
+	{ "rainbow"  , Rainbow  , 1, 0 },
+	{ "scanline" , Scanline , 1, 0 },
 };
 
 static int maplen = sizeof(CallbackMap) / sizeof(CallbackMap[0]);
 
-int Filter(IplImage** pointer, char* request, int allowExperiments) {
+int Filter(IplImage** pointer, char* _request, int allowExperiments) {
+	char* request = CopyString(_request);
 	char* context = NULL;
 	char* type = strtok_r(request, "=", &context);
 	if (type == NULL) {
+		free(request);
 		return IMP_ERROR_NO_SUCH_FILTER;
 	}
 	char* args = strtok_r(NULL, "=", &context);
+	free(request);
 	if (args == NULL) {
 		return IMP_ERROR_INVALID_ARGS;
 	}
@@ -187,6 +191,9 @@ int Gamma(IplImage** pointer, char* args) {
 	return IMP_OK;
 }
 
+// This code does some cool stuff with split/merge channels in order to handle 4-channel pics
+// However, it's unclear if this operations can cause memory leaks when splitted channels merged 
+// to source image without release and re-create. #todo: make leak test
 int Vignette(IplImage** pointer, char* args) {
 	char* context = NULL;
 
@@ -196,10 +203,26 @@ int Vignette(IplImage** pointer, char* args) {
 	char* _rad = strtok_r(NULL, ",", &context);
 	float radius = _rad == NULL ? 1.0 : strtof(_rad, NULL);
 
+	const int fullcnum = 4;
+
 	IplImage* image = *pointer;
+    IplImage* channels[fullcnum];
+
+    CvSize size = cvGetSize(image);
+
+    if (image->nChannels == fullcnum) {
+    	for (int i = 0; i < fullcnum; i++) {
+	        channels[i] = cvCreateImage(size, IPL_DEPTH_8U, 1);
+	    }
+	    cvSplit(image, channels[0], channels[1], channels[2], channels[3]);
+	    cvReleaseImage(&image);
+	    image = cvCreateImage(size, IPL_DEPTH_8U, 3);
+	    *pointer = image;
+	    cvMerge(channels[0], channels[1], channels[2], NULL, image);
+    }
 
 	float* mask = malloc(image->width * image->height * sizeof(float));
-	RadialGradient(mask, cvGetSize(image), intensity, radius, cvPoint(image->width / 2, image->height / 2));
+	RadialGradient(mask, size, intensity, radius, cvPoint(image->width / 2, image->height / 2));
 
 	int lightness = 0;
 	cvCvtColor(image, image, CV_BGR2Lab);
@@ -210,6 +233,14 @@ int Vignette(IplImage** pointer, char* args) {
 		cvSetComponent(image, x, y, lightness, source * mask[image->width * y + x]);
 	}
 	cvCvtColor(image, image, CV_Lab2BGR);
+
+	if (image->nChannels == fullcnum) {
+		cvSplit(image, channels[0], channels[1], channels[2], NULL);
+    	cvMerge(channels[0], channels[1], channels[2], channels[3], image);
+	    for (int i = 0; i < fullcnum; i++) {
+	        cvReleaseImage(&channels[i]);
+	    }
+	}
 
 	free(mask);
 
@@ -258,7 +289,7 @@ int Rainbow(IplImage** pointer, char* args) {
 	}
 
 	IplImage* image = *pointer;
-	cvCvtColor(image, image, CV_BGR2HSV);
+	RGB2HSV(image);
 	int x, y;
 	for (x = 0; x < image->width ; x++)
 	for (y = 0; y < image->height; y++) {
@@ -291,7 +322,7 @@ int Rainbow(IplImage** pointer, char* args) {
 		cvSetComponent(image, x, y, 2, light);
 	}
 
-	cvCvtColor(image, image, CV_HSV2BGR);
+	HSV2RGB(image);
 
 	return IMP_OK;
 }
@@ -324,7 +355,7 @@ int Scanline(IplImage** pointer, char* args) {
 	}	
 
 	IplImage* image = *pointer;
-	cvCvtColor(image, image, CV_BGR2HSV);
+	RGB2HSV(image);
 	int skipped = 0;
 	int drawed  = 0;
 	int x, y;
@@ -343,13 +374,13 @@ int Scanline(IplImage** pointer, char* args) {
 			skipped++;
 		}
 	}
-	cvCvtColor(image, image, CV_HSV2BGR);
+	HSV2RGB(image);
 
 	return IMP_OK;
 }
 
 void ModulateHSV(IplImage* image, int* hsv) {
-	cvCvtColor(image, image, CV_BGR2HSV);
+	RGB2HSV(image);
 
 	int x, y;
 	for (x = 0; x < image->width; x++)
@@ -370,7 +401,7 @@ void ModulateHSV(IplImage* image, int* hsv) {
 		}
 	}
 
-	cvCvtColor(image, image, CV_HSV2BGR);
+	HSV2RGB(image);
 }
 
 void ApplyGamma(IplImage* image, float gamma) {
