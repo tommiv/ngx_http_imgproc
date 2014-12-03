@@ -224,13 +224,12 @@ int Vignette(IplImage** pointer, char* args) {
 	float* mask = malloc(image->width * image->height * sizeof(float));
 	RadialGradient(mask, size, intensity, radius, cvPoint(image->width / 2, image->height / 2));
 
-	int VALUE = 2;
 	RGB2HSV(image);
 	int x, y;
 	for (x = 0; x < image->width ; x++)
 	for (y = 0; y < image->height; y++) {
-		float source = cvGetComponent(image, x, y, VALUE);
-		cvSetComponent(image, x, y, VALUE, source * mask[image->width * y + x]);
+		float source = cvGetComponent(image, x, y, CV_HSV_VAL);
+		cvSetComponent(image, x, y, CV_HSV_VAL, source * mask[image->width * y + x]);
 	}
 	HSV2RGB(image);
 
@@ -285,8 +284,8 @@ int Rainbow(IplImage** pointer, char* args) {
 	int x, y;
 	for (x = 0; x < image->width ; x++)
 	for (y = 0; y < image->height; y++) {
-		int hue   = cvGetComponent(image, x, y, 0) * 2; // extend range to common 360 deg
-		int light = cvGetComponent(image, x, y, 2);
+		int hue   = cvGetComponent(image, x, y, CV_HSV_HUE) * 2; // extend range to common 360 deg
+		int light = cvGetComponent(image, x, y, CV_HSV_VAL);
 		int saturation = sat;
 
 		if (light < 20) { // black
@@ -309,9 +308,9 @@ int Rainbow(IplImage** pointer, char* args) {
 		} else { // violet
 			hue = 285;
 		}
-		cvSetComponent(image, x, y, 0, hue / 2.0);
-		cvSetComponent(image, x, y, 1, saturation);
-		cvSetComponent(image, x, y, 2, light);
+		cvSetComponent(image, x, y, CV_HSV_HUE, hue / 2.0);
+		cvSetComponent(image, x, y, CV_HSV_SAT, saturation);
+		cvSetComponent(image, x, y, CV_HSV_VAL, light);
 	}
 
 	HSV2RGB(image);
@@ -459,24 +458,24 @@ void AlphaBlendOver(IplImage* source, IplImage* overlay, float opacity) {
 		int posy = row + workarea.y;
 
 		// note it's BGRA
-		float sourceB = cvGetComponent(source, posx, posy, 0) / 255.0;
-		float sourceG = cvGetComponent(source, posx, posy, 1) / 255.0;
-		float sourceR = cvGetComponent(source, posx, posy, 2) / 255.0;
-		float sourceA = source->nChannels == 4 ? cvGetComponent(source, posx, posy, 3) / 255.0 : 1;
+		float sourceB = cvGetComponent(source, posx, posy, CV_RGB_BLUE ) / 255.0;
+		float sourceG = cvGetComponent(source, posx, posy, CV_RGB_GREEN) / 255.0;
+		float sourceR = cvGetComponent(source, posx, posy, CV_RGB_RED  ) / 255.0;
+		float sourceA = source->nChannels == 4 ? cvGetComponent(source, posx, posy, CV_ALPHA) / 255.0 : 1;
 
-		float overlayB = cvGetComponent(overlay, col, row, 0) / 255.0;
-		float overlayG = cvGetComponent(overlay, col, row, 1) / 255.0;
-		float overlayR = cvGetComponent(overlay, col, row, 2) / 255.0;
-		float overlayA = overlay->nChannels == 4 ? cvGetComponent(overlay, col, row, 3) / 255.0 : 1;
+		float overlayB = cvGetComponent(overlay, col, row, CV_RGB_BLUE ) / 255.0;
+		float overlayG = cvGetComponent(overlay, col, row, CV_RGB_GREEN) / 255.0;
+		float overlayR = cvGetComponent(overlay, col, row, CV_RGB_RED  ) / 255.0;
+		float overlayA = overlay->nChannels == 4 ? cvGetComponent(overlay, col, row, CV_ALPHA) / 255.0 : 1;
 		overlayA = fmax(overlayA - alpha, 0);
 
 		float targetB = ((sourceA - overlayA) * sourceB) + (overlayA * overlayB);
 		float targetG = ((sourceA - overlayA) * sourceG) + (overlayA * overlayG);
 		float targetR = ((sourceA - overlayA) * sourceR) + (overlayA * overlayR);
 		
-		cvSetComponent(source, posx, posy, 0, targetB * 255);
-		cvSetComponent(source, posx, posy, 1, targetG * 255);
-		cvSetComponent(source, posx, posy, 2, targetR * 255);
+		cvSetComponent(source, posx, posy, CV_RGB_BLUE, targetB * 255);
+		cvSetComponent(source, posx, posy, CV_RGB_GREEN, targetG * 255);
+		cvSetComponent(source, posx, posy, CV_RGB_RED, targetR * 255);
 		
 		if (source->nChannels == 4) {
 			float targetA = sourceA + (1.0 - sourceA * overlayA);
@@ -514,9 +513,9 @@ float CalcPerceivedBrightness(IplImage* image) {
 	} else {
 		for (x = 0; x < image->width ; x++)
 		for (y = 0; y < image->height; y++) {
-			int r = cvGetComponent(image, x, y, 2);
-			int g = cvGetComponent(image, x, y, 1);
-			int b = cvGetComponent(image, x, y, 0);
+			int r = cvGetComponent(image, x, y, CV_RGB_RED);
+			int g = cvGetComponent(image, x, y, CV_RGB_GREEN);
+			int b = cvGetComponent(image, x, y, CV_RGB_BLUE);
 			sum += sqrt(
 				r * r * 0.241 + 
 				g * g * 0.691 + 

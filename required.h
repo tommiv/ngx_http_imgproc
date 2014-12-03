@@ -55,6 +55,14 @@
 
 // Various openCV-related const
 #define CV_HUE_WHEEL_RESOLUTION 180
+#define CV_ALPHA     3
+#define CV_RGB_RED   2
+#define CV_RGB_GREEN 1
+#define CV_RGB_BLUE  0
+#define CV_HSV_HUE   0
+#define CV_HSV_SAT   1
+#define CV_HSV_VAL   2
+
 
 typedef struct {
     int     Code;

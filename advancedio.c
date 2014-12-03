@@ -185,10 +185,10 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
                 }
                 
                 RGBQUAD color = palette[coloridx];
-                cvSetComponent(image, x, y, 0, color.rgbBlue);
-                cvSetComponent(image, x, y, 1, color.rgbGreen);
-                cvSetComponent(image, x, y, 2, color.rgbRed);
-                cvSetComponent(image, x, y, 3, coloridx == result->Frames[frameid].TransparencyKey ? 0 : 255);
+                cvSetComponent(image, x, y, CV_RGB_BLUE , color.rgbBlue);
+                cvSetComponent(image, x, y, CV_RGB_GREEN, color.rgbGreen);
+                cvSetComponent(image, x, y, CV_RGB_RED , color.rgbRed);
+                cvSetComponent(image, x, y, CV_ALPHA, coloridx == result->Frames[frameid].TransparencyKey ? 0 : 255);
             }
         }
         
