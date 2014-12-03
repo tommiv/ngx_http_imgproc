@@ -2,6 +2,10 @@
 #include "helpers.h"
 #include "filters.h"
 #include "bridge.h"
+#include "advancedio.h"
+
+char SIG_PNG[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+char SIG_JPG[] = { 0xFF, 0xD8, 0xFF };
 
 void OnEnvStart() {
 	// No op
@@ -11,13 +15,14 @@ void OnEnvDestroy() {
 	// No op
 }
 
-int Crop(IplImage** pointer, char* args) {
+int Crop(IplImage** pointer, char* _args) {
 	IplImage* image = *pointer;
 
 	size_t col = image->width;
 	size_t row = image->height;
-	
+
 	char separator[] = ",";
+	char* args = CopyString(_args);
 	char* next = NULL;
 	char* token = strtok_r(args, separator, &next);
 
@@ -30,8 +35,8 @@ int Crop(IplImage** pointer, char* args) {
 	unsigned int windowHeight = strtol(token ? token: "", &whmode, 10);
 
 	if (strcmp(wwmode, "") == 0 && strcmp(whmode, "") == 0) {
-		size_t px = col;
-		size_t py = px / windowWidth * windowHeight;
+		float px = col;
+		float py = px / windowWidth * windowHeight;
 
 		if (py > row) {
 			py = row;
@@ -43,10 +48,12 @@ int Crop(IplImage** pointer, char* args) {
 	} else if (strcmp(wwmode, "px") == 0 && strcmp(whmode, "px") == 0) {
 		// nothing to do here?
 	} else {
+		free(args);
 		return IMP_ERROR_INVALID_ARGS;
 	}
 
 	if (windowWidth == 0 || windowWidth > col || windowHeight == 0 || windowHeight > row) {
+		free(args);
 		return IMP_ERROR_INVALID_ARGS;
 	}
 
@@ -87,10 +94,13 @@ int Crop(IplImage** pointer, char* args) {
 	cvReleaseImage(&image);
 	*pointer = cropped;
 	
+	free(args);
 	return IMP_OK;
 }
 
-int Resize(IplImage** pointer, char* args, Config* config) {
+int Resize(IplImage** pointer, char* _args, Config* config, int simple) {
+	char* args = CopyString(_args);
+
 	IplImage* image = *pointer;
 	CvRect roi = cvGetImageROI(image);
 	size_t col = roi.width;
@@ -108,6 +118,7 @@ int Resize(IplImage** pointer, char* args, Config* config) {
 	unsigned int height = strtol(token ? token : "", &ymode, 10);
 
 	if (width == 0 && height == 0) {
+		free(args);
 		return IMP_ERROR_INVALID_ARGS;
 	}
 
@@ -129,15 +140,17 @@ int Resize(IplImage** pointer, char* args, Config* config) {
 
 	Dimensions* dmd = config->MaxTargetDimensions;
 	if ((dmd->W > 0 && width > dmd->W) || (dmd->H > 0 && width > dmd->H)) {
+		free(args);
 		return IMP_ERROR_TOO_BIG_TARGET;
 	}
 
 	IplImage* resized = cvCreateImage(cvSize(width, height), image->depth, image->nChannels);
-	int filter = width > col || height > row ? CV_INTER_CUBIC : CV_INTER_AREA;
+	int filter = simple ? CV_INTER_NN : width > col || height > row ? CV_INTER_CUBIC : CV_INTER_AREA;
 	cvResize(image, resized, filter);
 	cvReleaseImage(&image);
 	*pointer = resized;
 
+	free(args);
 	return IMP_OK;
 }
 
@@ -242,11 +255,15 @@ u_char* Info(IplImage* image, ngx_pool_t* pool) {
 }
 
 JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* config) {
-	// Unzip
+	// Step 0: Allocate base, parse request
 	u_char* tempbuf = ngx_pnalloc(req->pool, req->unparsed_uri.len);
-	u_char* request = tempbuf; // somehow ngx_unescape_uri corrupts passed buffer pointer
+	u_char* _dst = tempbuf; // somehow ngx_unescape_uri corrupts passed buffer pointer
 	ngx_unescape_uri(&tempbuf, &req->unparsed_uri.data, req->unparsed_uri.len, 0);
-	*tempbuf = '\0';
+	int properReqLength = tempbuf - _dst;
+	_dst[properReqLength] = '\0';
+	// Must. Copy. Again.
+	u_char* request = ngx_pnalloc(req->pool, properReqLength + 1);
+	memcpy(request, _dst, properReqLength + 1);
 
 	#ifdef IMP_DEBUG
 		syslog(LOG_NOTICE, "imp::RunJob():%s", request);
@@ -256,7 +273,9 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	char* resize  = NULL;
 	char* quality = NULL;
 	char* format  = NULL;
-	int   info    = 0;
+
+	int isdestructive = 0;
+	int page = -1;
 
 	char* filters[config->MaxFiltersCount];
 	int filterCount = 0;
@@ -288,63 +307,269 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 			quality = RewindArgs(token, "=");
 		} else if (StartsWith(token, "format")) {
 			format = RewindArgs(token, "=");
-		} else if (StartsWith(token, "info")) {
-			info = 1;
-			RewindArgs(token, "=");
+		} else if (StartsWith(token, "page")) {
+			page = strtol(RewindArgs(token, "="), NULL, 10);
 		} else if (StartsWith(token, "filter")) {
 			if (filterCount >= config->MaxFiltersCount) {
 				answer->Code = IMP_ERROR_TOO_MUCH_FILTERS;
 				return answer;
 			} else {
-				filters[filterCount++] = RewindArgs(token, "-");
+				filters[filterCount] = RewindArgs(token, "-");
+				if (isdestructive == 0) {
+					isdestructive = CheckDestructive(filters[filterCount]);
+				}
+				filterCount++;
 			}
 		}
 	}
 
-	// Run
-	CvMat rawencoded = cvMat(1, (int)size, CV_8U, blob);
-	IplImage* image = cvDecodeImage(&rawencoded, -1);
-	if (!image) {
+	// Step 1: Validate input blob, determine decoder
+	answer->Step = IMP_STEP_VALIDATE;
+	int decodeBasicIo = 
+		   ByteCompare(blob, (unsigned char*)&SIG_PNG, len(SIG_PNG)) 
+		|| ByteCompare(blob, (unsigned char*)&SIG_JPG, len(SIG_JPG));
+	int canDecode = decodeBasicIo;
+
+	#ifdef IMP_FEATURE_ADVANCED_IO
+	int decodeAdvancedIo = 0;
+	if (!canDecode) {
+		FIMEMORY* stream = FreeImage_OpenMemory(blob, size);
+		FREE_IMAGE_FORMAT fm = FreeImage_GetFileTypeFromMemory(stream, 0);
+		FreeImage_CloseMemory(stream);
+		if (fm == FIF_UNKNOWN) {
+			char* ext = CopyNgxString(req->exten);
+			FreeImage_GetFIFFromFilename(ext);
+			free(ext);
+		}
+		if (FiNotImplemented(fm)) {
+			answer->Code = IMP_ERROR_UNSUPPORTED;
+			return answer;
+		} else {
+			canDecode = 1;
+			decodeAdvancedIo = fm;
+		}
+	}
+	#else
+		if (!canDecode) {
+			answer->Code = IMP_ERROR_FEATURE_DISABLED;
+			return answer;
+		}
+	#endif
+
+	if (!canDecode) {
 		answer->Code = IMP_ERROR_UNSUPPORTED;
-		goto finalize;
+		return answer;
 	}
 
+	// Step 1b: Determine encoder, validate options
+	char* extension = CopyNgxString(req->exten);
+	if (format == NULL) {
+		format = extension;
+	}
+
+	int encodeBasicIO = 0;
+	if (strcmp(format, "jpg") == 0) {
+		answer->MIME = IMP_MIME_JPG;
+		encodeBasicIO = 1;
+	} else if (strcmp(format, "png") == 0) {
+		answer->MIME = IMP_MIME_PNG;
+		encodeBasicIO = 1;
+	} else if (strcmp(format, "json") == 0) {
+		answer->MIME = IMP_MIME_JSON;
+		encodeBasicIO = 1;
+	}
+
+	if (encodeBasicIO && page == -1) {
+		page = 0;
+	}
+
+	int encodeAdvancedIO = 0;
+	#ifdef IMP_FEATURE_ADVANCED_IO
+	if (answer->MIME == IMP_MIME_INTACT) {
+		FREE_IMAGE_FORMAT fm = FreeImage_GetFIFFromFilename(format);
+		if (FiNotImplemented(fm)) {
+			free(extension);
+			answer->Code = IMP_ERROR_UNSUPPORTED;
+			return answer;
+		} else {
+			encodeAdvancedIO = fm;
+			answer->MIME = IMP_MIME_ADVIO;
+			if (page == -1 && fm != FIF_GIF) {
+				page = 0;
+			}
+		}
+	}
+	#else
+		if (answer->MIME == IMP_MIME_INTACT) {
+			free(extension);
+			answer->Code = IMP_ERROR_FEATURE_DISABLED;
+			return answer;
+		}
+	#endif
+
+	free(extension);
+
+	if (answer->MIME == IMP_MIME_INTACT) {
+		answer->Code = IMP_ERROR_UNSUPPORTED;
+		return answer;
+	}
+
+	int basicCoderopt[3];
+	basicCoderopt[2] = 0;
+
+	#ifdef IMP_FEATURE_ADVANCED_IO
+	int advancedCoderopt = 0;
+	#endif
+
+	if (encodeBasicIO) {
+		if (answer->MIME == IMP_MIME_JPG) {
+			basicCoderopt[0] = CV_IMWRITE_JPEG_QUALITY;
+			int quantizer = 86;
+			if (quality) {
+				quantizer = strtol(quality, NULL, 10);
+			}
+			if (quantizer >= 0 && quantizer <= 100) {
+				basicCoderopt[1] = quantizer;
+			} else {
+				answer->Code = IMP_ERROR_INVALID_ARGS;
+				return answer;
+			}
+		} else if (answer->MIME == IMP_MIME_PNG) {
+			basicCoderopt[0] = CV_IMWRITE_PNG_COMPRESSION;
+			int quantizer = 9;
+			if (quality) {
+				quantizer = strtol(quality, NULL, 10);
+			}
+			if (quantizer >= 0 && quantizer <= 9) {
+				basicCoderopt[1] = quantizer;
+			} else {
+				answer->Code = IMP_ERROR_INVALID_ARGS;
+				return answer;
+			}
+		}
+	} else if (quality) {
+		#ifdef IMP_FEATURE_ADVANCED_IO
+			int quantizer = strtol(quality, NULL, 10);
+			switch(encodeAdvancedIO) {
+				case FIF_BMP:
+					if (!strcmp(quality, "rle")) advancedCoderopt = BMP_SAVE_RLE;
+				break;
+				case FIF_TARGA:
+					if (!strcmp(quality, "rle")) advancedCoderopt = TARGA_SAVE_RLE;
+				break;
+				case FIF_J2K:
+				case FIF_JP2:
+				case FIF_WEBP:
+					if (quantizer < 0 || quantizer > 512) {
+						answer->Code = IMP_ERROR_INVALID_ARGS;
+						return answer;
+					} else {
+						advancedCoderopt = quantizer;
+					}
+				break;
+				case FIF_TIFF:
+					if      (!strcmp(quality, "deflate")) advancedCoderopt = TIFF_DEFLATE;
+					else if (!strcmp(quality, "lzw"    )) advancedCoderopt = TIFF_LZW;
+					else if (!strcmp(quality, "jpeg"   )) advancedCoderopt = TIFF_JPEG;
+					else if (!strcmp(quality, "none"   )) advancedCoderopt = TIFF_NONE;
+				break;
+			}
+		#endif
+	}
+
+	// Step 2: Decode
+	answer->Step = IMP_STEP_DECODE;
+	Album album;
+	album.Error = IMP_OK;
+	album.Count = 0;
+	if (decodeBasicIo) {
+		CvMat rawencoded = cvMat(1, (int)size, CV_8U, blob);
+		IplImage* image = cvDecodeImage(&rawencoded, -1);
+		if (image) {
+			album.Count = 1;
+			album.Frames = ngx_palloc(req->pool, sizeof(Frame));
+			album.Frames[0].Image = image;
+			album.Frames[0].Time = album.Frames[0].Dispose = album.Frames[0].TransparencyKey = 0;
+		} else {
+			album.Error = IMP_ERROR_UNSUPPORTED;
+		}
+	} else {
+		#ifdef IMP_FEATURE_ADVANCED_IO
+			DecodeRequest decoder;
+			decoder.Buffer = blob;
+			decoder.Length = size;
+			decoder.Format = decodeAdvancedIo;
+			decoder.IsDestructive = isdestructive;
+			decoder.Page = page;
+			decoder.Pool = req->pool;
+			album = FiLoadFrames(decoder);
+		#endif
+	}
+
+	if (album.Error != IMP_OK) {
+		answer->Code = album.Error;
+		return answer;
+	}
+
+	// Steps 3-7: main operators
 	answer->Step = IMP_STEP_CROP;
 	if (crop) {
-		answer->Code = Crop(&image, crop);
-		if (answer->Code) {
-			goto finalize;
+		for (int fid = 0; fid  < album.Count; fid ++) {
+			IplImage* image = album.Frames[fid].Image;
+			answer->Code = Crop(&image, crop);
+			album.Frames[fid].Image = image;
+			if (answer->Code) {
+				goto finalize;
+			}
 		}
 	}
 
 	answer->Step = IMP_STEP_RESIZE;
 	if (resize) {
-		answer->Code = Resize(&image, resize, config);
-		if (answer->Code) {
-			goto finalize;
+		for (int fid = 0; fid < album.Count; fid++) {
+			IplImage* image = album.Frames[fid].Image;
+			#ifdef IMP_FEATURE_ADVANCED_IO
+				int simple = album.Count > 0 && encodeAdvancedIO == FIF_GIF;
+			#else
+				int simple = 0;
+			#endif
+			answer->Code = Resize(&image, resize, config, simple);
+			album.Frames[fid].Image = image;
+			if (answer->Code) {
+				goto finalize;
+			}
 		}
 	}
 
 	answer->Step = IMP_STEP_FILTERING;
-	int i;
-	for (i = 0; i < filterCount; i++) {
-		answer->Code = Filter(&image, filters[i], config->AllowExperiments);
-		if (answer->Code) {
-			goto finalize;
+	int i, fid;
+	for (fid = 0; fid < album.Count; fid++) {
+		IplImage* image = album.Frames[fid].Image;
+		for (i = 0; i < filterCount; i++) {
+			answer->Code = Filter(&image, filters[i], config->AllowExperiments);
+			if (answer->Code) {
+				goto finalize;
+			}
 		}
+		album.Frames[fid].Image = image;
 	}
 
 	answer->Step = IMP_STEP_WATERMARK;
 	if (config->WatermarkInfo) {
-		answer->Code = Watermark(image, config);
-		if (answer->Code) {
-			goto finalize;
+		for (int fid = 0; fid < album.Count; fid++) {
+			IplImage* image = album.Frames[fid].Image;
+			answer->Code = Watermark(image, config);
+			album.Frames[fid].Image = image;
+			if (answer->Code) {
+				goto finalize;
+			}
 		}
 	}
 
 	// alternative exit point
 	answer->Step = IMP_STEP_INFO;
-	if (info) {
+	if (answer->MIME == IMP_MIME_JSON) {
+		IplImage* image = album.Frames[0].Image; // #warn: get info by whole album?
 		u_char* json = Info(image, req->pool);
 		answer->Code = IMP_OK;
 		answer->Length = strlen((char*)json);
@@ -352,79 +577,33 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 		answer->MIME = IMP_MIME_JSON;
 		goto finalize;
 	}
-
-	char* extension = CopyNgxString(req->exten);
-
-	int coderopt[3];
-	coderopt[2] = 0;
-	answer->Step = IMP_STEP_FORMAT;
-	if (format == NULL) {
-		format = extension;
-	}
-
-	if (strcmp(format, "jpg") == 0) {
-		answer->MIME = IMP_MIME_JPG;
-		coderopt[0] = CV_IMWRITE_JPEG_QUALITY;
-	} else if (strcmp(format, "png") == 0) {
-		answer->MIME = IMP_MIME_PNG;
-		coderopt[0] = CV_IMWRITE_PNG_COMPRESSION;
-	} else if (strcmp(format, "webp") == 0) {
-		#ifdef IMP_FEATURE_WEBP
-			answer->MIME = IMP_MIME_WEBP;
-		#else
-			answer->Code = IMP_ERROR_FEATURE_DISABLED;
-			goto finalize;
-		#endif
-	} else {
-		answer->Code = IMP_ERROR_INVALID_ARGS;
-		goto finalize;
-	}
-
 	
-	answer->Step = IMP_STEP_QUALITY;
-	if (quality) {
-		int quantizer = strtol(quality, NULL, 10);
-		int qisvalid = 
-			   ((answer->MIME == IMP_MIME_JPG || answer->MIME == IMP_MIME_WEBP) && quantizer >= 0 && quantizer <= 100)
-			|| (answer->MIME == IMP_MIME_PNG && quantizer >= 0 && quantizer <= 9);
-		if (qisvalid) {
-			coderopt[1] = quantizer;
-		} else {
-			answer->Code = IMP_ERROR_INVALID_ARGS;
-			goto finalize;
-		}
-	} else {
-		if (answer->MIME == IMP_MIME_JPG || answer->MIME == IMP_MIME_WEBP) {
-			coderopt[1] = 86;
-		} else if (answer->MIME == IMP_MIME_PNG) {
-			coderopt[1] = 9;
-		}
-	}
-	
-	// Enjoy
-	answer->Step = IMP_STEP_GET_BLOB;
+	// Step 8: Encode && return
+	answer->Step = IMP_STEP_ENCODE;
 	answer->Code = IMP_OK;
 
-	if (answer->MIME == IMP_MIME_WEBP) {
-		#ifdef IMP_FEATURE_WEBP
-			uint8_t* encoded;
-			CvRect dim = cvGetImageROI(image);
-			// it's time for meh
-			if (image->nChannels == 4) {
-				answer->Length = WebPEncodeBGRA((uint8_t*)image->imageData, dim.width, dim.height, image->widthStep, coderopt[1], &encoded);
+	if (encodeAdvancedIO) {
+		#ifdef IMP_FEATURE_ADVANCED_IO
+			EncodeRequest encoder;
+			encoder.Album  = &album;
+			encoder.Pool   = req->pool;
+			encoder.Format = encodeAdvancedIO;
+			encoder.Flags  = advancedCoderopt;
+			Memory blob = FiSaveFrames(encoder);
+			if (blob.Error) {
+				answer->Code = blob.Error;
 			} else {
-				answer->Length = WebPEncodeBGR((uint8_t*)image->imageData, dim.width, dim.height, image->widthStep, coderopt[1], &encoded);
+				u_char* output = ngx_palloc(req->pool, blob.Length);
+				memcpy(output, blob.Buffer, blob.Length);
+				ngx_pfree(req->pool, blob.Buffer);
+				answer->EncodedBytes = output;
+				answer->Length = blob.Length;
+				answer->MIME = encodeAdvancedIO;
 			}
-
-			u_char* output = ngx_palloc(req->pool, answer->Length);
-			memcpy(output, encoded, answer->Length);
-			free(encoded);
-			answer->EncodedBytes = output;
 		#endif
 	} else {
-		char formatcode[6];
-		sprintf(formatcode, ".%s", format);
-		CvMat* encoded = cvEncodeImage(formatcode, image, coderopt);
+		IplImage* image = album.Frames[0].Image;
+		CvMat* encoded = cvEncodeImage(answer->MIME == IMP_MIME_JPG ? ".jpg" : ".png", image, basicCoderopt);
 		answer->Length = encoded->rows * encoded->cols;
 		u_char* output = ngx_palloc(req->pool, answer->Length);
 		memcpy(output, encoded->data.ptr, answer->Length);
@@ -432,11 +611,15 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 		answer->EncodedBytes = output;
 	}
 
-	free(extension);
-
 	goto finalize;
 
 	finalize:
-		cvReleaseImage(&image);
+		if (album.Count && album.Frames) {
+			for (int fid = 0; fid < album.Count; fid++) {
+				IplImage* image = album.Frames[fid].Image;
+				cvReleaseImage(&image);
+			}
+			ngx_pfree(req->pool, album.Frames);
+		}
 		return answer;
 }

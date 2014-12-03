@@ -24,6 +24,16 @@ static const struct {
 
 static int maplen = sizeof(CallbackMap) / sizeof(CallbackMap[0]);
 
+int CheckDestructive(char* request) {
+	int i;
+	for (i = 0; i < maplen; i++) {
+		if (ByteCompare((unsigned char*)request, (unsigned char*)CallbackMap[i].Name, strlen(CallbackMap[i].Name))) {
+			return CallbackMap[i].Destructive;
+		}
+	}
+	return 0;
+}
+
 int Filter(IplImage** pointer, char* _request, int allowExperiments) {
 	char* request = CopyString(_request);
 	char* context = NULL;

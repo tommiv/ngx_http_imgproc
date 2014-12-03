@@ -352,11 +352,15 @@ static ngx_int_t BodyFilter(ngx_http_request_t* r, ngx_chain_t* in) {
 			case IMP_MIME_PNG:
 				content_type = "image/png";
 			break;
-			case IMP_MIME_WEBP:
-				content_type = "image/webp"; // #warn: this is unofficial mime type
-			break;
 			case IMP_MIME_JSON:
 				content_type = "application/json";
+			break;
+			default:
+				#ifdef IMP_FEATURE_ADVANCED_IO
+					content_type = (char*)FreeImage_GetFIFMimeType(result->MIME);
+				#else
+					content_type = "image/png";
+				#endif
 			break;
 		}
 		r->headers_out.content_type.data = (u_char*)content_type;

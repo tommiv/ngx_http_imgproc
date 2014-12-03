@@ -1,5 +1,5 @@
 // Optional features
-#define IMP_FEATURE_WEBP
+#define IMP_FEATURE_ADVANCED_IO
 
 // Comment out this in production
 // #define IMP_DEBUG
@@ -13,8 +13,8 @@
 #include <ngx_http.h>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-#ifdef IMP_FEATURE_WEBP
-#include <webp/encode.h>
+#ifdef IMP_FEATURE_ADVANCED_IO
+#include <FreeImage.h>
 #endif
 
 // Errors: No
@@ -22,6 +22,8 @@
 // Errors: IO
 #define IMP_ERROR_UNSUPPORTED   1
 #define IMP_ERROR_MALLOC_FAILED 2
+#define IMP_ERROR_DECODE_FAILED 3
+#define IMP_ERROR_ENCODE_FAILED 4
 // Errors: Bad config
 #define IMP_ERROR_INVALID_ARGS      50
 #define IMP_ERROR_UPSCALE           51
@@ -35,21 +37,21 @@
 
 // Steps
 #define IMP_STEP_START     0
-#define IMP_STEP_CROP      1
-#define IMP_STEP_RESIZE    2
-#define IMP_STEP_FILTERING 3
-#define IMP_STEP_WATERMARK 4
-#define IMP_STEP_INFO      5
-#define IMP_STEP_FORMAT    6
-#define IMP_STEP_QUALITY   7
-#define IMP_STEP_GET_BLOB  8
+#define IMP_STEP_VALIDATE  1
+#define IMP_STEP_DECODE    2
+#define IMP_STEP_CROP      3
+#define IMP_STEP_RESIZE    4
+#define IMP_STEP_FILTERING 5
+#define IMP_STEP_WATERMARK 6
+#define IMP_STEP_INFO      7
+#define IMP_STEP_ENCODE    8
 
 // MIME types
 #define IMP_MIME_INTACT 0
 #define IMP_MIME_JPG    1
 #define IMP_MIME_PNG    2
-#define IMP_MIME_WEBP   3
-#define IMP_MIME_JSON   4
+#define IMP_MIME_JSON   3
+#define IMP_MIME_ADVIO  4
 
 // Various openCV-related const
 #define CV_HUE_WHEEL_RESOLUTION 180
@@ -104,3 +106,40 @@ typedef struct {
     int     DataSent;
     CvMat*  ToDestruct;
 } PeerContext;
+
+typedef struct {
+    IplImage* Image;
+    int       Time;
+    int       Dispose;
+    int       TransparencyKey;
+} Frame;
+
+typedef struct {
+    Frame* Frames;
+    int    Count;
+    int    Error;
+} Album;
+
+typedef struct {
+    unsigned char* Buffer;
+    long           Length;
+    int            Error;
+} Memory;
+
+#ifdef IMP_FEATURE_ADVANCED_IO
+typedef struct {
+    unsigned char*    Buffer;
+    int               Length;
+    ngx_pool_t*       Pool;
+    FREE_IMAGE_FORMAT Format;
+    int               IsDestructive;
+    int               Page;
+} DecodeRequest;
+
+typedef struct {
+    Album*            Album;
+    ngx_pool_t*       Pool;
+    FREE_IMAGE_FORMAT Format;
+    int               Flags;
+} EncodeRequest;
+#endif

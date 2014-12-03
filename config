@@ -1,5 +1,5 @@
 ngx_addon_name=ngx_http_imgproc_module
 HTTP_FILTER_MODULES="$HTTP_FILTER_MODULES ngx_http_imgproc_module"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/module.c $ngx_addon_dir/bridge.c $ngx_addon_dir/helpers.c $ngx_addon_dir/filters.c"
-NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/module.h $ngx_addon_dir/bridge.h $ngx_addon_dir/helpers.h $ngx_addon_dir/filters.h $ngx_addon_dir/required.h"
-CORE_LIBS="$CORE_LIBS -lopencv_core -lopencv_imgproc -lopencv_highgui -lwebp"
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/module.c $ngx_addon_dir/bridge.c $ngx_addon_dir/helpers.c $ngx_addon_dir/filters.c $ngx_addon_dir/advancedio.c"
+NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/module.h $ngx_addon_dir/bridge.h $ngx_addon_dir/helpers.h $ngx_addon_dir/filters.h $ngx_addon_dir/advancedio.h $ngx_addon_dir/required.h"
+CORE_LIBS="$CORE_LIBS -lopencv_core -lopencv_imgproc -lopencv_highgui -lfreeimage"
