@@ -201,9 +201,13 @@ int Gamma(IplImage** pointer, char* args) {
 	return IMP_OK;
 }
 
-// This code does some cool stuff with split/merge channels in order to handle 4-channel pics
-// However, it's unclear if this operations can cause memory leaks when splitted channels merged 
-// to source image without release and re-create. #todo: make leak test
+// Original algorithm was designed to work in CIELab colorspace,
+// but conversion integer RGB to LAB hard to implement in-place.
+// To support proper algorithm flow with 4channel images support
+// a lot of channel split/merge and mem copy/reallocation should be done.
+// So I suppose it's better to apply gradient in HSV colorspace. 
+// It still provides decent results in my test 
+// but allows to do most conversions in-place in integer domain
 int Vignette(IplImage** pointer, char* args) {
 	char* context = NULL;
 
@@ -213,44 +217,22 @@ int Vignette(IplImage** pointer, char* args) {
 	char* _rad = strtok_r(NULL, ",", &context);
 	float radius = _rad == NULL ? 1.0 : strtof(_rad, NULL);
 
-	const int fullcnum = 4;
-
 	IplImage* image = *pointer;
-    IplImage* channels[fullcnum];
 
     CvSize size = cvGetSize(image);
-
-    if (image->nChannels == fullcnum) {
-    	for (int i = 0; i < fullcnum; i++) {
-	        channels[i] = cvCreateImage(size, IPL_DEPTH_8U, 1);
-	    }
-	    cvSplit(image, channels[0], channels[1], channels[2], channels[3]);
-	    cvReleaseImage(&image);
-	    image = cvCreateImage(size, IPL_DEPTH_8U, 3);
-	    *pointer = image;
-	    cvMerge(channels[0], channels[1], channels[2], NULL, image);
-    }
 
 	float* mask = malloc(image->width * image->height * sizeof(float));
 	RadialGradient(mask, size, intensity, radius, cvPoint(image->width / 2, image->height / 2));
 
-	int lightness = 0;
-	cvCvtColor(image, image, CV_BGR2Lab);
+	int VALUE = 2;
+	RGB2HSV(image);
 	int x, y;
 	for (x = 0; x < image->width ; x++)
 	for (y = 0; y < image->height; y++) {
-		float source = cvGetComponent(image, x, y, lightness);
-		cvSetComponent(image, x, y, lightness, source * mask[image->width * y + x]);
+		float source = cvGetComponent(image, x, y, VALUE);
+		cvSetComponent(image, x, y, VALUE, source * mask[image->width * y + x]);
 	}
-	cvCvtColor(image, image, CV_Lab2BGR);
-
-	if (image->nChannels == fullcnum) {
-		cvSplit(image, channels[0], channels[1], channels[2], NULL);
-    	cvMerge(channels[0], channels[1], channels[2], channels[3], image);
-	    for (int i = 0; i < fullcnum; i++) {
-	        cvReleaseImage(&channels[i]);
-	    }
-	}
+	HSV2RGB(image);
 
 	free(mask);
 
