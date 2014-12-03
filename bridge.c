@@ -569,6 +569,21 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 		}
 	}
 
+	int hasAlpha = album.Frames[0].Image->nChannels == 4;
+	int needFlatten = hasAlpha && answer->MIME == IMP_MIME_JPG;
+	#ifdef IMP_FEATURE_ADVANCED_IO
+		if (encodeAdvancedIO) {
+			needFlatten = hasAlpha && !FiSupports32bit(encodeAdvancedIO);
+		}
+	#endif
+
+	if (needFlatten) {
+		for (int fid = 0; fid < album.Count; fid++) {
+			IplImage* image = album.Frames[fid].Image;
+			BlendWithPaper(image);
+		}
+	}
+
 	// alternative exit point
 	answer->Step = IMP_STEP_INFO;
 	if (answer->MIME == IMP_MIME_JSON) {

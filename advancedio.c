@@ -50,7 +50,7 @@ static FREE_IMAGE_FORMAT no32bitsupport[] = {
     FIF_PPM,
     FIF_PPMRAW
 };
-static int Supports32bit(FREE_IMAGE_FORMAT format) {
+int FiSupports32bit(FREE_IMAGE_FORMAT format) {
     int size = sizeof(no32bitsupport) / sizeof(no32bitsupport[0]);
     for (int i = 0; i < size; i++) {
         if (format == no32bitsupport[i]) {
@@ -364,7 +364,7 @@ static void SaveGIF(Album* source, ngx_pool_t* pool, Memory* result, int params)
 
 static void SaveSingle(Album* source, ngx_pool_t* pool, Memory* result, FREE_IMAGE_FORMAT format, int params) {
     IplImage* image = source->Frames[0].Image;
-    FIBITMAP* frame = Supports32bit(format) ? IplToFI32(image) : IplToFI24(image);
+    FIBITMAP* frame = FiSupports32bit(format) ? IplToFI32(image) : IplToFI24(image);
     
     FIMEMORY* destination = FreeImage_OpenMemory(NULL, 0);
     int encoderes = FreeImage_SaveToMemory(format, frame, destination, params);

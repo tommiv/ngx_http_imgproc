@@ -457,7 +457,6 @@ void AlphaBlendOver(IplImage* source, IplImage* overlay, float opacity) {
 		int posx = col + workarea.x;
 		int posy = row + workarea.y;
 
-		// note it's BGRA
 		float sourceB = cvGetComponent(source, posx, posy, CV_RGB_BLUE ) / 255.0;
 		float sourceG = cvGetComponent(source, posx, posy, CV_RGB_GREEN) / 255.0;
 		float sourceR = cvGetComponent(source, posx, posy, CV_RGB_RED  ) / 255.0;
@@ -481,6 +480,29 @@ void AlphaBlendOver(IplImage* source, IplImage* overlay, float opacity) {
 			float targetA = sourceA + (1.0 - sourceA * overlayA);
 			cvSetComponent(source, posx, posy, 3, targetA * 255);
 		}
+	}
+}
+
+// Discard transparency by blend with #FFFFFFFF paper,
+// used to save proper image when encoder does not support alpha channel
+void BlendWithPaper(IplImage* source) {
+	int x, y;
+	for (y = 0; y < source->height; y++)
+	for (x = 0; x < source->width ; x++) {
+		float overlayB = cvGetComponent(source, x, y, CV_RGB_BLUE ) / 255.0;
+		float overlayG = cvGetComponent(source, x, y, CV_RGB_GREEN) / 255.0;
+		float overlayR = cvGetComponent(source, x, y, CV_RGB_RED  ) / 255.0;
+		float overlayA = cvGetComponent(source, x, y, CV_ALPHA    ) / 255.0 ;
+
+		float targetB = (1 - overlayA) + (overlayB * overlayA);
+		float targetG = (1 - overlayA) + (overlayG * overlayA);
+		float targetR = (1 - overlayA) + (overlayR * overlayA);
+		
+		cvSetComponent(source, x, y, CV_RGB_BLUE , targetB * 255);
+		cvSetComponent(source, x, y, CV_RGB_GREEN, targetG * 255);
+		cvSetComponent(source, x, y, CV_RGB_RED  , targetR * 255);
+		
+		cvSetComponent(source, x, y, CV_ALPHA, 255);
 	}
 }
 

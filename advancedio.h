@@ -6,6 +6,7 @@
 #define GIF_DISPOSAL_PREVIOUS    3
 
 int FiNotImplemented(FREE_IMAGE_FORMAT format);
+int FiSupports32bit(FREE_IMAGE_FORMAT format);
 
 Album  FiLoadFrames(DecodeRequest req);
 Memory FiSaveFrames(EncodeRequest req);

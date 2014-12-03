@@ -21,6 +21,7 @@ void BrightnessContrast(IplImage* image, float br, float ct);
 
 void AlphaBlendAddColor(IplImage* source, int* rgb, float alpha);
 void AlphaBlendOver(IplImage* source, IplImage* overlay, float opacity);
+void BlendWithPaper(IplImage* source);
 
 void RadialGradient(float* mask, CvSize size, float power, float radius, CvPoint center);
 
