@@ -238,18 +238,21 @@ int Watermark(IplImage* image, Config* config) {
 	return IMP_OK;
 }
 
-u_char* Info(IplImage* image, ngx_pool_t* pool) {
+u_char* Info(Album* album, ngx_pool_t* pool) {
+	IplImage* image = album->Frames[0].Image;
 	u_char* json = ngx_palloc(pool, 256 * sizeof(u_char));
 	sprintf(
 		(char*)json,
 		"{"
 			"\"width\":%d,"
 			"\"height\":%d,"
-			"\"brightness\":%d"
+			"\"brightness\":%d,"
+			"\"count\":%d"
 		"}",
 		image->width,
 		image->height,
-		(int)round(CalcPerceivedBrightness(image) * 100)
+		(int)round(CalcPerceivedBrightness(image) * 100),
+		album->Count
 	);
 	return json;
 }
@@ -379,7 +382,7 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 		encodeBasicIO = 1;
 	}
 
-	if (encodeBasicIO && page == -1) {
+	if (encodeBasicIO && page == -1 && answer->MIME != IMP_MIME_JSON) {
 		page = 0;
 	}
 
@@ -569,8 +572,7 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	// alternative exit point
 	answer->Step = IMP_STEP_INFO;
 	if (answer->MIME == IMP_MIME_JSON) {
-		IplImage* image = album.Frames[0].Image; // #warn: get info by whole album?
-		u_char* json = Info(image, req->pool);
+		u_char* json = Info(&album, req->pool);
 		answer->Code = IMP_OK;
 		answer->Length = strlen((char*)json);
 		answer->EncodedBytes = json;
