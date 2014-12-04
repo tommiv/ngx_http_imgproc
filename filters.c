@@ -202,8 +202,8 @@ int Gamma(IplImage** pointer, char* args) {
 }
 
 // Original algorithm was designed to work in CIELab colorspace,
-// but conversion integer RGB to LAB hard to implement in-place.
-// To support proper algorithm flow with 4channel images support
+// but conversion (integer RGB) => LAB is too hard to implement in-place.
+// To support proper algorithm flow with 4channel images
 // a lot of channel split/merge and mem copy/reallocation should be done.
 // So I suppose it's better to apply gradient in HSV colorspace. 
 // It still provides decent results in my test 
@@ -489,18 +489,20 @@ void BlendWithPaper(IplImage* source) {
 	int x, y;
 	for (y = 0; y < source->height; y++)
 	for (x = 0; x < source->width ; x++) {
-		float overlayB = cvGetComponent(source, x, y, CV_RGB_BLUE ) / 255.0;
-		float overlayG = cvGetComponent(source, x, y, CV_RGB_GREEN) / 255.0;
-		float overlayR = cvGetComponent(source, x, y, CV_RGB_RED  ) / 255.0;
-		float overlayA = cvGetComponent(source, x, y, CV_ALPHA    ) / 255.0 ;
+		int overlayB = cvGetComponent(source, x, y, CV_RGB_BLUE );
+		int overlayG = cvGetComponent(source, x, y, CV_RGB_GREEN);
+		int overlayR = cvGetComponent(source, x, y, CV_RGB_RED  );
+		int overlayA = cvGetComponent(source, x, y, CV_ALPHA    );
 
-		float targetB = (1 - overlayA) + (overlayB * overlayA);
-		float targetG = (1 - overlayA) + (overlayG * overlayA);
-		float targetR = (1 - overlayA) + (overlayR * overlayA);
+		int   diffalpha = 255 - overlayA;
+		float prodalpha = overlayA / 255.0;
+		int targetB = diffalpha + (overlayB * prodalpha);
+		int targetG = diffalpha + (overlayG * prodalpha);
+		int targetR = diffalpha + (overlayR * prodalpha);
 		
-		cvSetComponent(source, x, y, CV_RGB_BLUE , targetB * 255);
-		cvSetComponent(source, x, y, CV_RGB_GREEN, targetG * 255);
-		cvSetComponent(source, x, y, CV_RGB_RED  , targetR * 255);
+		cvSetComponent(source, x, y, CV_RGB_BLUE , targetB);
+		cvSetComponent(source, x, y, CV_RGB_GREEN, targetG);
+		cvSetComponent(source, x, y, CV_RGB_RED  , targetR);
 		
 		cvSetComponent(source, x, y, CV_ALPHA, 255);
 	}
