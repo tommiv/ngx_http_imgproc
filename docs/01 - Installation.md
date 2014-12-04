@@ -15,7 +15,7 @@ We will need openCV. Offsite instructions is build it from source.
 
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev webp libwebp-dev
+    sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev
         
 Download sources. You can do it with wget, but source stored on SourceForge which has it's own handler for downloads. Much easier to download it with your favorite browser and put to server via sftp client. Get your copy [here](http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.9/opencv-2.4.9.zip/download). I put mine into /var/opt/src/OpenCV.
     
@@ -38,6 +38,39 @@ This will take... a while.
 to /etc/ld.so.conf and update binding:
     
     sudo ldconfig
+
+----------
+
+## Install FreeImage
+
+FreeImage library provide support for huge list of input/output image formats, including WEBP, TIFF and GIF (with **animation support**). If you don't need this, just comment out _IMP\_FEATURE\_ADVANCED\_IO_ flag in top of required.h file and skip this section. Without FreeImage IMP restricted to OpenCV codec, and therefore has support only for JPEG and PNG.
+
+#### Through packet manager
+
+Before you go, there is **huge caveat**: it probably will install 3.15.x version of library. WEBP therefore will be unavailable. (Official site also says: _It (v3.16) also provides better support for RAW, JPEG-2000, BMP, SGI, ICO, PSD, TIFF, TGA, GIF formats_).
+
+If you ok with this, just run
+
+    sudo apt-get install libfreeimage-dev
+
+or use packet manager provided by your OS. Otherwise go to next header.
+
+#### From source
+
+1. Go to http://freeimage.sourceforge.net/download.html and copy link to source. Let's say it http://downloads.sourceforge.net/freeimage/FreeImage3160.zip
+2. Download and unpack it.
+
+        cd /var/opt/src
+        wget http://downloads.sourceforge.net/freeimage/FreeImage3160.zip
+        unzip FreeImage3160.zip
+
+3. Compile and install
+
+        cd FreeImage
+        make
+        sudo make install
+
+
 
 ----------
 
