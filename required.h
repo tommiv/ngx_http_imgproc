@@ -17,6 +17,12 @@
 #include <FreeImage.h>
 #endif
 
+// hack to avoid compilation error with freeimage < 3.16
+#if FREEIMAGE_MAJOR_VERSION <= 3 && FREEIMAGE_MINOR_VERSION < 16
+    #define FIF_WEBP 35
+    #define FIF_JXR  36
+#endif
+
 // Errors: No
 #define IMP_OK 0
 // Errors: IO
