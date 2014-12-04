@@ -517,7 +517,8 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	// Steps 3-7: main operators
 	answer->Step = IMP_STEP_CROP;
 	if (crop) {
-		for (int fid = 0; fid  < album.Count; fid ++) {
+		int fid;
+		for (fid = 0; fid  < album.Count; fid ++) {
 			IplImage* image = album.Frames[fid].Image;
 			answer->Code = Crop(&image, crop);
 			album.Frames[fid].Image = image;
@@ -529,7 +530,8 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 
 	answer->Step = IMP_STEP_RESIZE;
 	if (resize) {
-		for (int fid = 0; fid < album.Count; fid++) {
+		int fid;
+		for (fid = 0; fid < album.Count; fid++) {
 			IplImage* image = album.Frames[fid].Image;
 			#ifdef IMP_FEATURE_ADVANCED_IO
 				int simple = album.Count > 0 && encodeAdvancedIO == FIF_GIF;
@@ -559,7 +561,8 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 
 	answer->Step = IMP_STEP_WATERMARK;
 	if (config->WatermarkInfo) {
-		for (int fid = 0; fid < album.Count; fid++) {
+		int fid;
+		for (fid = 0; fid < album.Count; fid++) {
 			IplImage* image = album.Frames[fid].Image;
 			answer->Code = Watermark(image, config);
 			album.Frames[fid].Image = image;
@@ -578,7 +581,8 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	#endif
 
 	if (needFlatten) {
-		for (int fid = 0; fid < album.Count; fid++) {
+		int fid;
+		for (fid = 0; fid < album.Count; fid++) {
 			IplImage* image = album.Frames[fid].Image;
 			BlendWithPaper(image);
 		}
@@ -632,7 +636,8 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 
 	finalize:
 		if (album.Count && album.Frames) {
-			for (int fid = 0; fid < album.Count; fid++) {
+			int fid;
+			for (fid = 0; fid < album.Count; fid++) {
 				IplImage* image = album.Frames[fid].Image;
 				cvReleaseImage(&image);
 			}

@@ -6,7 +6,8 @@ int StartsWith(char* haystack, const char* needle) {
 }
 
 int ByteCompare(unsigned char* haystack, unsigned char* needle, int length) {
-    for (int i = 0; i < length; i++) {
+	int i;
+    for (i = 0; i < length; i++) {
         if (haystack[i] != needle[i]) {
             return 0;
         }

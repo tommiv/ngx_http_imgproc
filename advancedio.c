@@ -31,7 +31,8 @@ static FREE_IMAGE_FORMAT notimplemented[] = {
 };
 int FiNotImplemented(FREE_IMAGE_FORMAT format) {
     int size = sizeof(notimplemented) / sizeof(notimplemented[0]);
-    for (int i = 0; i < size; i++) {
+    int i;
+    for (i = 0; i < size; i++) {
         if (format == notimplemented[i]) {
             return 1;
         }
@@ -52,7 +53,8 @@ static FREE_IMAGE_FORMAT no32bitsupport[] = {
 };
 int FiSupports32bit(FREE_IMAGE_FORMAT format) {
     int size = sizeof(no32bitsupport) / sizeof(no32bitsupport[0]);
-    for (int i = 0; i < size; i++) {
+    int i;
+    for (i = 0; i < size; i++) {
         if (format == no32bitsupport[i]) {
             return 0;
         }
@@ -66,11 +68,12 @@ static FIBITMAP* IplToFI32(IplImage* image) {
     int validtransparency = image->nChannels == 4;
     int bytecount32 = 4;
     int pitch = FreeImage_GetPitch(frame32b);
-    for (int y = 0; y < image->height; y++) {
+    int x, y, c;
+    for (y = 0; y < image->height; y++) {
         int row = image->height - 1 - y;
-        for (int x = 0; x < image->width; x++) {
+        for (x = 0; x < image->width; x++) {
             int offset = y * pitch + x * bytecount32;
-            for (int c = 0; c < 3; c++) {
+            for (c = 0; c < 3; c++) {
                 frame32data[offset + c] = cvGetComponent(image, x, row, c);
             }
             frame32data[offset + 3] = validtransparency ? cvGetComponent(image, x, row, 3) : 255;
@@ -84,12 +87,14 @@ static FIBITMAP* IplToFI24(IplImage* image) {
     unsigned char* frame24data = FreeImage_GetBits(frame24b);
     int bytecount24 = 3;
     int pitch = FreeImage_GetPitch(frame24b);
-    for (int y = 0; y < image->height; y++) {
+    int x, y, c;
+    for (y = 0; y < image->height; y++) {
         int row = image->height - 1 - y;
-        for (int x = 0; x < image->width; x++) {
+        for (x = 0; x < image->width; x++) {
             int offset = y * pitch + x * bytecount24;
-            for (int c = 0; c < bytecount24; c++)
+            for (c = 0; c < bytecount24; c++) {
                 frame24data[offset + c] = cvGetComponent(image, x, row, c);
+            }
         }
     }
     return frame24b;
@@ -116,7 +121,8 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
     
     int* master = NULL;
     
-    for (int frameid = 0; frameid < framecount; frameid++) {
+    int frameid;
+    for (frameid = 0; frameid < framecount; frameid++) {
         FIBITMAP* frame = FreeImage_LockPage(container, frameid);
         
         int w = FreeImage_GetWidth(frame);
@@ -155,9 +161,10 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
             }
         }
         
-        for (int y = 0; y < h; y++) {
+        int x, y;
+        for (y = 0; y < h; y++) {
             unsigned char* row = FreeImage_GetScanLine(frame, h - 1 - y);
-            for (int x = 0; x < w; x++) {
+            for (x = 0; x < w; x++) {
                 int coloridx = row[x];
                 
                 if (isdestructive) {
@@ -247,11 +254,12 @@ static void LoadSingle(Album* result, FIMEMORY* mem, ngx_pool_t* pool, FREE_IMAG
     
     unsigned char* data = FreeImage_GetBits(fullcolor);
     const int bytecount32 = 4;
-    for (int y = 0; y < h; y++) {
+    int x, y, c;
+    for (y = 0; y < h; y++) {
         int row = h - 1 - y;
-        for (int x = 0; x < w; x++) {
+        for (x = 0; x < w; x++) {
             int offset = y * w * bytecount32 + x * bytecount32;
-            for (int c = 0; c < bytecount32; c++) {
+            for (c = 0; c < bytecount32; c++) {
                 cvSetComponent(image, x, row, c, data[offset + c]);
             }
         }
@@ -284,7 +292,8 @@ static void SaveGIF(Album* source, ngx_pool_t* pool, Memory* result, int params)
     int palettesize = 255;
     RGBQUAD* palette = NULL;
     
-    for (int frameid = 0; frameid < source->Count; frameid++) {
+    int frameid;
+    for (frameid = 0; frameid < source->Count; frameid++) {
         IplImage* image = source->Frames[frameid].Image;
         FIBITMAP* frame32b = IplToFI32(image);
 
@@ -306,10 +315,11 @@ static void SaveGIF(Album* source, ngx_pool_t* pool, Memory* result, int params)
         unsigned int   pitch32b = FreeImage_GetPitch(frame32b);
         unsigned char* frameIndexData = FreeImage_GetBits(page);
         unsigned int   pitchIndex = FreeImage_GetPitch(page);
-        for (int y = 0; y < image->height; y++, frame32data += pitch32b, frameIndexData += pitchIndex) {
+        int x, y;
+        for (y = 0; y < image->height; y++, frame32data += pitch32b, frameIndexData += pitchIndex) {
             RGBQUAD* src = (RGBQUAD*)frame32data;
             BYTE*    tgt = (BYTE*)frameIndexData;
-            for (int x = 0; x < image->width; x++) {
+            for (x = 0; x < image->width; x++) {
                 if (src[x].rgbReserved == 0) {
                     tgt[x] = palettesize;
                 }
