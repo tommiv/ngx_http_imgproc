@@ -120,6 +120,9 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
     result->Frames = ngx_palloc(pool, framecount * sizeof(Frame));
     
     int* master = NULL;
+
+    int canvasW = 0;
+    int canvasH = 0;
     
     int frameid;
     for (frameid = 0; frameid < framecount; frameid++) {
@@ -127,6 +130,11 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
         
         int w = FreeImage_GetWidth(frame);
         int h = FreeImage_GetHeight(frame);
+
+        if (frameid == 0) {
+            canvasW = w;
+            canvasH = h;
+        }
         
         FITAG* tag = NULL;
         FreeImage_GetMetadata(FIMD_ANIMATION, frame, "FrameTime", &tag);
@@ -141,12 +149,35 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
             const int* disposeval = FreeImage_GetTagValue(tag);
             result->Frames[frameid].Dispose = *disposeval;
         }
+
+        tag = NULL;
+        FreeImage_GetMetadata(FIMD_ANIMATION, frame, "DisposalMethod", &tag);
+        if (tag) {
+            const int* disposeval = FreeImage_GetTagValue(tag);
+            result->Frames[frameid].Dispose = *disposeval;
+        }
+
+        short left = 0;
+        short top  = 0;
+        tag = NULL;
+        FreeImage_GetMetadata(FIMD_ANIMATION, frame, "FrameLeft", &tag);
+        if (tag) {
+            const short* leftval = FreeImage_GetTagValue(tag);
+            left = *leftval;
+        }
+
+        tag = NULL;
+        FreeImage_GetMetadata(FIMD_ANIMATION, frame, "FrameTop", &tag);
+        if (tag) {
+            const short* topval = FreeImage_GetTagValue(tag);
+            top = *topval;
+        }
         
         result->Frames[frameid].TransparencyKey = FreeImage_GetTransparentIndex(frame);
         
         RGBQUAD* palette = FreeImage_GetPalette(frame);
         
-        IplImage* image = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, 4);
+        IplImage* image = cvCreateImage(cvSize(canvasW, canvasH), IPL_DEPTH_8U, 4);
         if (!image->imageData) {
             cvReleaseImageHeader(&image);
             result->Error = IMP_ERROR_MALLOC_FAILED;
@@ -155,20 +186,25 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
         result->Frames[frameid].Image = image;
         
         if (isdestructive && !frameid) {
-            master = ngx_palloc(pool, h * w * sizeof(int));
+            master = ngx_palloc(pool, canvasH * canvasW * sizeof(int));
             if (!master) {
                 result->Error = IMP_ERROR_MALLOC_FAILED;
             }
         }
         
         int x, y;
-        for (y = 0; y < h; y++) {
-            unsigned char* row = FreeImage_GetScanLine(frame, h - 1 - y);
-            for (x = 0; x < w; x++) {
+        for (y = 0; y < canvasH; y++) {
+            unsigned char* row = FreeImage_GetScanLine(frame, canvasH - 1 - y);
+            for (x = 0; x < canvasW; x++) {
                 int coloridx = row[x];
+
+                // if pixel out of frame bounds, just set it to transparent
+                if (x < left || y < top || x > left + w || y > top + h) {
+                    coloridx = result->Frames[frameid].TransparencyKey;
+                }
                 
                 if (isdestructive) {
-                    int offset   = y * w + x;
+                    int offset   = y * canvasW + x;
                     
                     switch (result->Frames[frameid].Dispose) {
                         case GIF_DISPOSAL_BACKGROUND:
@@ -194,8 +230,8 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
                 RGBQUAD color = palette[coloridx];
                 cvSetComponent(image, x, y, CV_RGB_BLUE , color.rgbBlue);
                 cvSetComponent(image, x, y, CV_RGB_GREEN, color.rgbGreen);
-                cvSetComponent(image, x, y, CV_RGB_RED , color.rgbRed);
-                cvSetComponent(image, x, y, CV_ALPHA, coloridx == result->Frames[frameid].TransparencyKey ? 0 : 255);
+                cvSetComponent(image, x, y, CV_RGB_RED  , color.rgbRed);
+                cvSetComponent(image, x, y, CV_ALPHA    , coloridx == result->Frames[frameid].TransparencyKey ? 0 : 255);
             }
         }
         
