@@ -366,7 +366,7 @@ static void SaveGIF(Album* source, ngx_pool_t* pool, Memory* result, int params)
         FreeImage_SetTagKey(frameTimeTag, "FrameTime");
         FreeImage_SetTagType(frameTimeTag, FIDT_LONG);
         FreeImage_SetTagCount(frameTimeTag, 1);
-        FreeImage_SetTagLength(frameTimeTag, sizeof(long));
+        FreeImage_SetTagLength(frameTimeTag, 4); // sizeof(long) does not work since it probably returns 8
         FreeImage_SetTagValue(frameTimeTag, &source->Frames[frameid].Time);
         FreeImage_SetMetadata(FIMD_ANIMATION, page, FreeImage_GetTagKey(frameTimeTag), frameTimeTag);
         FreeImage_DeleteTag(frameTimeTag);
