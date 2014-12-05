@@ -2,7 +2,7 @@
 #define IMP_FEATURE_ADVANCED_IO
 
 // Comment out this in production
-#define IMP_DEBUG
+// #define IMP_DEBUG
 
 // Includes
 #include <stdio.h>

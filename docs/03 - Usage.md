@@ -45,7 +45,7 @@ Samples:
 
 **Allow Upscale**. Optional. By default, set to dimensions larger than image size will just skip resize. If you faced rare case when you want to upscale picture, put *up* keyword to 3rd argument. Remember that IMP will still respect *imgproc\_max\_target\_dimensions* config option.
 
-IMP will use CV\_INTER\_CUBIC filter for upscale and CV\_INTER\_AREA for downscale.
+IMP will use CV\_INTER\_CUBIC filter for upscale, CV\_INTER\_AREA for downscale and CV\_INTER\_NN for GIF files in both directions.
 
     # just resize to 1000px width, keep aspect ratio
     resize=1000
@@ -268,35 +268,46 @@ The yellow one. There is no controllable parameters for this filter. Border is n
     
 ##Format
 
-While it's rare case, you still can convert your image to one of popular web format. Content-Type header will be changed respectively.
+You can convert your image to one of popular web format. Content-Type header will be changed respectively. Some of formats below supports only output (for example, you cannot _read_ picture from json, you can only _write_ info in json format to output). Some formats supports quality options.
 
-**Format**. This is the only argument. Required. jpg|png is supported by openCV. webp is supported via 3rd part lib. You need to build IMP with uncommented flag IMP\_FEATURE\_WEBP in required.h. 
-
-    format=png
-    format=jpg
+    format=jpg&quality=70
     format=webp
+    format=json
+    format=text&quality=wide
+
+####Support list
+
+- **BasicIO**. Supported by openCV, so works out-of-the box.
+    - jpg. Quality is integer in range [0; 100] where bigger is better.
+    - png. Quality is integer in range [0; 9] where bigger is smaller file. However, it looks like OpenCV don't rely on this option.
+- **AdvancedIO**. Supported by FreeImage and available only when feature is on. Introduces support of animated (or not) GIFs, WEBP (v3.16 or later), JPEG2K etc. IMP supports subset of FreeImage formats which works without any special image preparation. List of not implemented FIF formats you can find in advancedio.h.
+    - webp, j2k, jp2. Quality is integer in range [0; 100] where bigger is better. 
+    - targa, bmp. Quality is string "rle" for run-length encoding compression or any other for no compression.
+    - tiff. Quality is string: "deflate", "lzw" for lossless, "jpeg" for lossy or "none" for not compression.
+    - jpeg. Just for fun, you can use FreeImage jpeg encoder instead of OpenCV, however, I don't see any visible difference, probably both uses libjpeg. Quality is the same as for jpg/webp.
+    - gif. Does not support any quality options, but support animations instead. Important note: GIF uses diff-compression between frames, leaving not updated parts of new frame transparent, so it can be compressed effectively. This transparency will break if you use some of filters. For now, such "destructive" filters are blur and vignette. In this case IMP will restore full representation of each frame. While this help to get proper result, it will dramatically increase file size. Same restoration performs when you extract page from multipaged image (see "Page" section of this file). Also keep in mind that time will be multiplied to frames count, and additionally calculation of index table will take time, so processing of big gifs is generally slow operation.
+     
+            /sponge.gif?resize=300&filter-modulate=60,70,80
+
+    ![Imgur](http://i.imgur.com/uk5VI6O.gif) ![Imgur](http://i.imgur.com/MIhjdov.gif)
+
+- **Non-image**. Some lateral features which does not return image itself.
+    - json. Returns image info in json format.
+        - _width_. Int, in pixels
+        - _height_. Int, in pixels
+        - _brightness_. Int, in percents; shows weighted average image brightness, can be used to determine which text color draw over. 0 for totally black and 100 for totally white. If image multipaged, it calculated for first frame.
+        - _count_. Int, shows frame count in multipaged image. Shows 1 for single-paged images.
+    - text. Returns ASCII-art representation of image in plain text. Quality is string: "wide" will use wide (70 character) density table, while any other value will use basic table. Irony here, basic table usually look better. You probably will want to resize image before asciifying it. It also good idea to compress its height, because of proportions of most fonts.
+        
+            format=text
     
-##Quality
+        ![Imgur](http://i.imgur.com/4N1qBnUl.png)
 
-Low quality can save bandwidth, but it can bring to picture... low quality. It looks like imgproc don't give a shit on change quality for png/gif, so this option useful only for jpg.
+##Page
 
-**Value**. This is the only argument. Required.
+This directive allows to get exact frame from multipaged image. If frames count less than provided value, 1st frame will return.
 
-For jpg/webp:
-Positive integer in range [0; 100], where 100 is best quality and biggest file. Default is 86.
+    crop=1,1,c,c&filter-gotham=1&page=10
 
-For png:
-Positive integer in range [0; 9] where 9 is smallest file. However, in my test environment only value 0 and 3 makes different results. #todo: figure it out.
-    
-    quality=80
-    format=png&quality=9
-    
-##Info
-
-You can ask IMP for info about image instead of image itself, by adding `info=1` to query. Data compiles just before compression step, so any changes such as resize/crop/filters are represented in it. Info returns in JSON format, and for now, contains this members:
-    
-**width**. Int, in pixels
-
-**height**. Int, in pixels
-
-**brightness**. Int, in percents; shows weighted average image brightness, can be used to determine which text color draw over. 0 for totally black and 100 for totally white.
+ ![Imgur](http://i.imgur.com/uk5VI6O.gif)
+ ![Imgur](http://i.imgur.com/5tpbquW.jpg)
