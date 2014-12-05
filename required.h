@@ -2,7 +2,7 @@
 #define IMP_FEATURE_ADVANCED_IO
 
 // Comment out this in production
-// #define IMP_DEBUG
+#define IMP_DEBUG
 
 // Includes
 #include <stdio.h>
@@ -58,6 +58,7 @@
 #define IMP_MIME_PNG    2
 #define IMP_MIME_JSON   3
 #define IMP_MIME_ADVIO  4
+#define IMP_MIME_TEXT   5
 
 // Various openCV-related const
 #define CV_HUE_WHEEL_RESOLUTION 180

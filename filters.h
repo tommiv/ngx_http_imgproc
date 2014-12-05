@@ -12,6 +12,8 @@ int  Kelvin   (IplImage** pointer, char* args);
 int  Rainbow  (IplImage** pointer, char* args);
 int  Scanline (IplImage** pointer, char* args);
 
+Memory ASCII (IplImage* input, char* args, ngx_pool_t* pool);
+
 int CheckDestructive(char* request);
 
 void ModulateHSV(IplImage* image, int* hsv);

@@ -370,6 +370,44 @@ int Scanline(IplImage** pointer, char* args) {
 	return IMP_OK;
 }
 
+static unsigned char AsciiDensityWide[]   = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
+static unsigned char AsciiDensityNarrow[] = "@%8#*+=-:. ";
+Memory ASCII (IplImage* image, char* args, ngx_pool_t* pool) {
+	unsigned char* table;
+	if (strcmp(args, "wide") == 0) {
+		table = AsciiDensityWide;
+	} else {
+		table = AsciiDensityNarrow;
+	}
+	int tablelen = strlen((const char*)table);
+	float factor = 256.0 / tablelen;
+
+	int width  = image->width;
+	int height = image->height;
+
+	int buflen = (width + 1) * height - 1;
+	unsigned char* ascii = ngx_palloc(pool, buflen);
+
+	RGB2HSV(image);
+	int x, y;
+	for (y = 0; y < height; y++) {
+		int rowoffset = y * (width + 1);
+		for (x = 0; x < width; x++) {
+			int density = floor(cvGetComponent(image, x, y, CV_HSV_VAL) / factor);
+			ascii[rowoffset + x] = table[density];
+		}
+		if (rowoffset > 0) {
+			ascii[rowoffset - 1] = '\n';
+		}
+	}
+
+	Memory result;
+	result.Buffer = ascii;
+	result.Length = buflen;
+	result.Error  = IMP_OK;
+	return result;
+}
+
 void ModulateHSV(IplImage* image, int* hsv) {
 	RGB2HSV(image);
 

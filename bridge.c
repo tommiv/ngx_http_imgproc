@@ -380,6 +380,9 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	} else if (strcmp(format, "json") == 0) {
 		answer->MIME = IMP_MIME_JSON;
 		encodeBasicIO = 1;
+	} else if (strcmp(format, "text") == 0) {
+		answer->MIME = IMP_MIME_TEXT;
+		encodeBasicIO = 1;
 	}
 
 	if (encodeBasicIO && page == -1 && answer->MIME != IMP_MIME_JSON) {
@@ -588,14 +591,24 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 		}
 	}
 
-	// alternative exit point
+	// alternative exit points
 	answer->Step = IMP_STEP_INFO;
 	if (answer->MIME == IMP_MIME_JSON) {
 		u_char* json = Info(&album, req->pool);
 		answer->Code = IMP_OK;
 		answer->Length = strlen((char*)json);
 		answer->EncodedBytes = json;
-		answer->MIME = IMP_MIME_JSON;
+		goto finalize;
+	}
+
+	if (answer->MIME == IMP_MIME_TEXT) {
+		IplImage* image = album.Frames[0].Image;
+		Memory res = ASCII(image, quality ? quality : "", req->pool);
+		answer->Code = res.Error;
+		if (res.Error == IMP_OK) {
+			answer->Length       = res.Length;
+			answer->EncodedBytes = res.Buffer;
+		}
 		goto finalize;
 	}
 	

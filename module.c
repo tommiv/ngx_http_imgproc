@@ -355,6 +355,9 @@ static ngx_int_t BodyFilter(ngx_http_request_t* r, ngx_chain_t* in) {
 			case IMP_MIME_JSON:
 				content_type = "application/json";
 			break;
+			case IMP_MIME_TEXT:
+				content_type = "text/plain";
+			break;
 			default:
 				#ifdef IMP_FEATURE_ADVANCED_IO
 					content_type = (char*)FreeImage_GetFIFMimeType(result->MIME);
