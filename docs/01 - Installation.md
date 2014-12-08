@@ -198,3 +198,69 @@ Replace binary
     service nginx-imp stop
     cp objs/nginx /var/opt/bin/nginx-imp/
     service nginx-imp start
+    
+
+----------
+
+##Run inside docker
+There's no prepared image, but it's definetely possible to build it. Here is sample of how it could work, but you'll probably will want to modify paths/ips/configs etc.
+
+0. Install docker if needed
+
+        sudo apt-get install docker.io
+    
+1. Go to nginx source folder and create folder for docker files
+
+        cd /var/opt/src/nginx
+        mkdir docker && cd docker
+
+2. Create build.sh file with this content:
+
+        #! /bin/sh
+
+        cp ../objs/nginx .
+        cp /usr/local/lib/libopencv_core.so.2.4 .
+        cp /usr/local/lib/libopencv_imgproc.so.2.4 .
+        cp /usr/local/lib/libopencv_highgui.so.2.4 .
+        cp /usr/lib/libfreeimage.so.3 .
+        mkdir -p /etc/nginx-imp/conf
+        mkdir -p /etc/nginx-imp/logs
+        cp -f ../conf/* /etc/nginx-imp/conf
+        
+        docker.io build -t nginx_imp .
+    
+    **Important**: building openCV, FreeImage and nginx itself inside docker is too complex, slow and also leads to too big docker image, so we just copy pre-built libs and executable to image. However, code above assumes that openCV is 2.4.x branch and FreeImage is 3.x branch and both libs built from sources as it described in this manual. It's up to you to check if this libs really exists on its places. Note you can use `readelf -d nginx | grep NEEDED` to get list of dynamic libs required by nginx-imp executable.
+
+3. Create Dockerfile with this content:
+
+        FROM ubuntu
+        MAINTAINER John Doe <john@example.com>
+        
+        RUN apt-get update && apt-get install -y libgtk2.0-dev libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev
+        
+        COPY nginx /var/opt/bin/nginx-imp/nginx
+        COPY libopencv_core.so.2.4 /usr/lib/libopencv_core.so.2.4
+        COPY libopencv_imgproc.so.2.4 /usr/lib/libopencv_imgproc.so.2.4
+        COPY libopencv_highgui.so.2.4 /usr/lib/libopencv_highgui.so.2.4
+        COPY libfreeimage.so.3 /usr/lib/libfreeimage.so.3
+        
+        CMD ["/var/opt/bin/nginx-imp/nginx"]
+        EXPOSE 80
+        
+4. Build image with
+
+        chmod +x build.sh
+        ./build.sh
+        
+5. If build was ok, you need to edit /etc/nginx-imp/conf/nginx.conf and put `daemon off` directive to it. It's really important since docker will close container if nginx daemonize itself.
+
+6. Finally, you can run container
+
+        docker run -d \
+        -p 127.0.0.10:80:80 \
+        -v /etc/nginx-imp/conf:/var/opt/bin/nginx-imp/conf \
+        -v /etc/nginx-imp/logs:/var/opt/bin/nginx-imp/logs \
+        -v /var/www/imp:/var/www \
+        nginx_imp
+        
+    Here we set explicit IP, mount volumes from host to container with config and logs, and also www folder. Of course you can change paths as you wish. Remove `-d` key to view emerge nginx alerts if something went wrong. If no errors were thrown, check `docker ps` to ensure container is still running. If so, you can put any image to host `/var/www/imp` and try to process it: `curl 127.0.0.10/test.jpg?resize=16` (sorry, this will flood your terminal with unreadable binary data).
