@@ -480,14 +480,13 @@ void AlphaBlendAddColor(IplImage* source, int* rgb, float alpha) {
 }
 
 // Unfortunately, cvAddWeighted produces weird results for transparent overlay
-// Unfortunately x2 this code also produces weird results, but for transparent source
-void AlphaBlendOver(IplImage* source, IplImage* overlay, float opacity) {
-	double alpha = 1 - opacity;
+void AlphaBlendOver(IplImage* destination, IplImage* source, float opacity) {
+	float alpha = 1 - opacity;
 
-	CvRect workarea = cvGetImageROI(source);
+	CvRect workarea = cvGetImageROI(destination);
 	
-	int maxrow = fmin(overlay->height, source->height - workarea.y);
-	int maxcol = fmin(overlay->width , source->width  - workarea.x);
+	int maxrow = fmin(source->height, destination->height - workarea.y);
+	int maxcol = fmin(source->width , destination->width  - workarea.x);
 
 	int row, col;
 	for (row = 0; row < maxrow; row++)
@@ -495,28 +494,33 @@ void AlphaBlendOver(IplImage* source, IplImage* overlay, float opacity) {
 		int posx = col + workarea.x;
 		int posy = row + workarea.y;
 
-		float sourceB = cvGetComponent(source, posx, posy, CV_RGB_BLUE ) / 255.0;
-		float sourceG = cvGetComponent(source, posx, posy, CV_RGB_GREEN) / 255.0;
-		float sourceR = cvGetComponent(source, posx, posy, CV_RGB_RED  ) / 255.0;
-		float sourceA = source->nChannels == 4 ? cvGetComponent(source, posx, posy, CV_ALPHA) / 255.0 : 1;
+		int destinationB = cvGetComponent(destination, posx, posy, CV_RGB_BLUE );
+		int destinationG = cvGetComponent(destination, posx, posy, CV_RGB_GREEN);
+		int destinationR = cvGetComponent(destination, posx, posy, CV_RGB_RED  );
+		float destinationA = destination->nChannels == 4 ? cvGetComponent(destination, posx, posy, CV_ALPHA) / 255.0 : 1;
 
-		float overlayB = cvGetComponent(overlay, col, row, CV_RGB_BLUE ) / 255.0;
-		float overlayG = cvGetComponent(overlay, col, row, CV_RGB_GREEN) / 255.0;
-		float overlayR = cvGetComponent(overlay, col, row, CV_RGB_RED  ) / 255.0;
-		float overlayA = overlay->nChannels == 4 ? cvGetComponent(overlay, col, row, CV_ALPHA) / 255.0 : 1;
-		overlayA = fmax(overlayA - alpha, 0);
+		int sourceB = cvGetComponent(source, col, row, CV_RGB_BLUE );
+		int sourceG = cvGetComponent(source, col, row, CV_RGB_GREEN);
+		int sourceR = cvGetComponent(source, col, row, CV_RGB_RED  );
+		float sourceA = source->nChannels == 4 ? cvGetComponent(source, col, row, CV_ALPHA) / 255.0 : 1;
+		sourceA = fmax(sourceA - alpha, 0);
 
-		float targetB = ((sourceA - overlayA) * sourceB) + (overlayA * overlayB);
-		float targetG = ((sourceA - overlayA) * sourceG) + (overlayA * overlayG);
-		float targetR = ((sourceA - overlayA) * sourceR) + (overlayA * overlayR);
+		float targetA = sourceA + destinationA * (1 - sourceA);
+		int targetB, targetG, targetR;
+		if (targetA == 0) {
+			targetB = targetG = targetR = 0;
+		} else {
+			targetB = (sourceB * sourceA + destinationB * destinationA * (1 - sourceA)) / targetA;
+			targetG = (sourceG * sourceA + destinationG * destinationA * (1 - sourceA)) / targetA;
+			targetR = (sourceR * sourceA + destinationR * destinationA * (1 - sourceA)) / targetA;
+		}
+
+		cvSetComponent(destination, posx, posy, CV_RGB_BLUE , targetB);
+		cvSetComponent(destination, posx, posy, CV_RGB_GREEN, targetG);
+		cvSetComponent(destination, posx, posy, CV_RGB_RED  , targetR);
 		
-		cvSetComponent(source, posx, posy, CV_RGB_BLUE, targetB * 255);
-		cvSetComponent(source, posx, posy, CV_RGB_GREEN, targetG * 255);
-		cvSetComponent(source, posx, posy, CV_RGB_RED, targetR * 255);
-		
-		if (source->nChannels == 4) {
-			float targetA = sourceA + (1.0 - sourceA * overlayA);
-			cvSetComponent(source, posx, posy, 3, targetA * 255);
+		if (destination->nChannels == 4) {
+			cvSetComponent(destination, posx, posy, CV_ALPHA, targetA * 255);
 		}
 	}
 }
