@@ -20,6 +20,9 @@ static const struct {
 	{ "kelvin"   , Kelvin   , 1, 0 },
 	{ "rainbow"  , Rainbow  , 1, 0 },
 	{ "scanline" , Scanline , 1, 0 },
+	#ifdef IMP_FEATURE_SLOW_FILTERS
+	{ "cartoon"  , Cartoon  , 1, 0 },
+	#endif
 };
 
 static int maplen = sizeof(CallbackMap) / sizeof(CallbackMap[0]);
@@ -370,6 +373,35 @@ int Scanline(IplImage** pointer, char* args) {
 	return IMP_OK;
 }
 
+#ifdef IMP_FEATURE_SLOW_FILTERS
+// This filter creates cool effect, but k-means algorithm too complex and therefore slow for runtime usage
+int Cartoon(IplImage** pointer, char* args) {
+	IplImage* image = *pointer;
+	IplImage* result = cvCreateImage(cvGetSize(image), image->depth, image->nChannels);
+    Kmeans(image, 10);
+    cvSmooth(image, result, CV_BILATERAL, 7, 0, 150, 150);
+    
+    IplImage* edges = cvCreateImage(cvGetSize(result), IPL_DEPTH_8U, 1);
+    cvCanny(result, edges, 50, 200, 3);
+    CvMemStorage* storage = cvCreateMemStorage(0);
+    CvSeq* contours = 0;
+    cvFindContours(edges, storage, &contours, sizeof(CvContour), CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0));
+    
+    CvSeq* iter;
+    for (iter = contours; iter != 0; iter = iter->h_next){
+        cvDrawContours(result, iter, CV_RGB(40, 40, 40), cvScalarAll(0), 0, 1, CV_AA, cvPoint(0,0));
+    }
+    
+    cvReleaseMemStorage(&storage);
+    cvReleaseImage(&edges);
+    cvReleaseImage(&image);
+
+    *pointer = result;
+
+    return IMP_OK;
+}
+#endif
+
 static unsigned char AsciiDensityWide[]   = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
 static unsigned char AsciiDensityNarrow[] = "@%8#*+=-:. ";
 Memory ASCII (IplImage* image, char* args, ngx_pool_t* pool) {
@@ -590,4 +622,41 @@ float CalcPerceivedBrightness(IplImage* image) {
 		}
 	}
 	return sum / (image->width * image->height) / 255.0;
+}
+
+void Kmeans(IplImage* image, int k) {
+	IplImage* normal = cvCreateImage(cvGetSize(image), IPL_DEPTH_32F, image->nChannels);
+	cvConvertScale(image, normal, 1/255.0, 0);
+	CvMat* points = cvCreateMat(image->width * image->height, 3, CV_32FC1);
+    
+	float* data = (float*)normal->imageData;
+	int step = normal->widthStep/sizeof(float);
+	int x, y, c, idx = 0;
+	for (y = 0; y < normal->height; y++)
+	for (x = 0; x < normal->width; x++, idx++)
+	for (c = 0; c < 3; c++) {
+		cvSetReal2D(points, idx, c, data[y * step + x * normal->nChannels + c]);
+	}
+    
+	CvMat* labels = cvCreateMat(normal->height * normal->width, 1, CV_32SC1);
+	CvMat* centers = cvCreateMat(k, 3, CV_32FC1);
+	CvTermCriteria criteria = cvTermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 10, 1.0);
+	cvKMeans2(points, k, labels, criteria, 4, NULL, KMEANS_PP_CENTERS, centers, 0);
+    
+    idx = 0;
+	for (y = 0; y < normal->height; y++)
+	for (x = 0; x < normal->width; x++, idx++) {
+		int cluster = cvGetReal2D(labels, idx, 0);
+		for (c = 0; c < 3; c++) {
+			float val = cvGetReal2D(centers, cluster, c);
+			data[y * step + x * normal->nChannels + c] = val;
+		}
+	}
+    
+    cvConvertScale(normal, image, 255.0, 0);
+    
+    cvReleaseImage(&normal);
+    cvReleaseMat(&points);
+    cvReleaseMat(&labels);
+    cvReleaseMat(&centers);
 }

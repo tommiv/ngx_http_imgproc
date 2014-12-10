@@ -11,6 +11,7 @@ int  Lomo     (IplImage** pointer, char* args);
 int  Kelvin   (IplImage** pointer, char* args);
 int  Rainbow  (IplImage** pointer, char* args);
 int  Scanline (IplImage** pointer, char* args);
+int  Cartoon  (IplImage** pointer, char* args);
 
 Memory ASCII (IplImage* input, char* args, ngx_pool_t* pool);
 
@@ -28,3 +29,5 @@ void BlendWithPaper(IplImage* source);
 void RadialGradient(float* mask, CvSize size, float power, float radius, CvPoint center);
 
 float CalcPerceivedBrightness(IplImage* image);
+
+void Kmeans(IplImage* image, int k);

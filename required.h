@@ -1,5 +1,6 @@
 // Optional features
 #define IMP_FEATURE_ADVANCED_IO
+// #define IMP_FEATURE_SLOW_FILTERS
 
 // Comment out this in production
 // #define IMP_DEBUG
@@ -69,6 +70,8 @@
 #define CV_HSV_HUE   0
 #define CV_HSV_SAT   1
 #define CV_HSV_VAL   2
+
+#define KMEANS_PP_CENTERS 2
 
 
 typedef struct {
