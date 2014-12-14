@@ -194,17 +194,22 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
         
         int x, y;
         for (y = 0; y < canvasH; y++) {
-            unsigned char* row = FreeImage_GetScanLine(frame, canvasH - 1 - y);
+            unsigned char* row = NULL; 
+            int rowidx = h + top - y - 1;
+            if (rowidx >= 0) {
+                row = FreeImage_GetScanLine(frame, rowidx);
+            }
             for (x = 0; x < canvasW; x++) {
-                int coloridx = row[x];
-
+                int coloridx;
                 // if pixel out of frame bounds, just set it to transparent
-                if (x < left || y < top || x > left + w || y > top + h) {
+                if (!row || x < left || y < top || x > left + w || y > top + h) {
                     coloridx = result->Frames[frameid].TransparencyKey;
+                } else {
+                    coloridx = row[x - left];
                 }
                 
                 if (isdestructive) {
-                    int offset   = y * canvasW + x;
+                    int offset = y * canvasW + x;
                     
                     switch (result->Frames[frameid].Dispose) {
                         case GIF_DISPOSAL_BACKGROUND:
@@ -234,7 +239,7 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
                 cvSetComponent(image, x, y, CV_ALPHA    , coloridx == result->Frames[frameid].TransparencyKey ? 0 : 255);
             }
         }
-        
+
         FreeImage_UnlockPage(container, frame, 0);
 
         if (frameid == page) {
