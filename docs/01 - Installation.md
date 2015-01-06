@@ -1,9 +1,9 @@
 #Installation
 
 ##Prerequisites
-All tips in this doc related to Ubuntu 12.04. If you use less popular OS, it's up to you do all this stuff below.
+All tips in this doc are related to Ubuntu 12.04. If you use less popular OS, it's up to you to do all this stuff below.
 
-You will need **git**. If you don't have git, just install it with packet manager
+You will need **git**. If you don't have git, just install it with the packet manager
 
     sudo apt-get install git
 
@@ -11,13 +11,13 @@ You will need **git**. If you don't have git, just install it with packet manage
 
 ##Install OpenCV from sources
 
-We will need openCV. Offsite instructions is build it from source.
+We will need openCV. Offsite instructions are to build it from source.
 
     sudo apt-get update
     sudo apt-get upgrade
     sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev
         
-Download sources. You can do it with wget, but source stored on SourceForge which has it's own handler for downloads. Much easier to download it with your favorite browser and put to server via sftp client. Get your copy [here](http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.9/opencv-2.4.9.zip/download). I put mine into /var/opt/src/OpenCV.
+Download sources. You can do it with wget, but the source is stored on SourceForge which has it's own handler for downloads. It's much easier to download it with your favorite browser and put to server via sftp client. Get your copy [here](http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.9/opencv-2.4.9.zip/download). I put mine into /var/opt/src/OpenCV.
     
    It's compile time.
     
