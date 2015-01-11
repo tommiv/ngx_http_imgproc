@@ -263,10 +263,10 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	u_char* _dst = tempbuf; // somehow ngx_unescape_uri corrupts passed buffer pointer
 	ngx_unescape_uri(&tempbuf, &req->unparsed_uri.data, req->unparsed_uri.len, 0);
 	int properReqLength = tempbuf - _dst;
-	_dst[properReqLength] = '\0';
 	// Must. Copy. Again.
 	u_char* request = ngx_pnalloc(req->pool, properReqLength + 1);
-	memcpy(request, _dst, properReqLength + 1);
+	memcpy(request, _dst, properReqLength);
+	request[properReqLength] = '\0';
 
 	#ifdef IMP_DEBUG
 		syslog(LOG_NOTICE, "imp::RunJob():%s", request);
