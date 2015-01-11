@@ -37,17 +37,19 @@ int CheckDestructive(char* request) {
 	return 0;
 }
 
+// #todo: this free(request); are really annoying
 int Filter(IplImage** pointer, char* _request, int allowExperiments) {
 	char* request = CopyString(_request);
 	char* context = NULL;
 	char* type = strtok_r(request, "=", &context);
+
 	if (type == NULL) {
 		free(request);
 		return IMP_ERROR_NO_SUCH_FILTER;
 	}
 	char* args = strtok_r(NULL, "=", &context);
-	free(request);
 	if (args == NULL) {
+		free(request);
 		return IMP_ERROR_INVALID_ARGS;
 	}
 
@@ -55,10 +57,13 @@ int Filter(IplImage** pointer, char* _request, int allowExperiments) {
 	for (i = 0; i < maplen; i++) {
 		int found = strcmp(type, CallbackMap[i].Name) == 0 && (allowExperiments || !CallbackMap[i].Experimental);
 		if (found) {
-			return CallbackMap[i].FilterCallback(pointer, args);
+			int result = CallbackMap[i].FilterCallback(pointer, args);
+			free(request);
+			return result;
 		}
 	}
 
+	free(request);
 	return IMP_ERROR_NO_SUCH_FILTER;
 }
 
