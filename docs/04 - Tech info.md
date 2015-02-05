@@ -1,41 +1,43 @@
-#Tech info
+# Tech info
 
-##HTTP codes
+## HTTP codes
 
-**400 Bad Request**. Returns when
+**400 Bad Request**
 
-- Method arguments format is wrong (type, count or out of range)
+- Invalid argument(s) - wrong arguments count, invalid value
 
-**405 Method Not Allowed**. Returns when
+**405 Method Not Allowed**
 
-- Unknown filter requested;
-- Filters limit exceeded;
+- Unknown filter requested
+- Filters limit exceeded
 
-**413 Request Entity Too Large**. Returns when
+**413 Request Entity Too Large**
 
-- Target is bigger than limits;
+- Requested output image size is above limits
 
-**415 Unsupported Media Type**. Returns when
+**415 Unsupported Media Type**
 
-- Image cannot be decoded;
-- Source is bigger than limit;
+- Image cannot be decoded
+- Source image is too large
 
-**424 Failed Dependency**. Returns when
+**424 Failed Dependency**
 
-- Requested operation which not supported because disabled on compilation level (for now this is WEBP support only)
+- Requested an operation which is not supported (occurs when feature was not enabled during compilation; for now this is WEBP support only)
 
-**500 Internal Server Error**. Returns when 
+**500 Internal Server Error**
 
-- something went wrong. See **debug** topic.
+- Something went wrong. See **debug** topic below
 
-----------
+***
 
-##Debug
+## Debug
 
-Since nginx is server software, it can be hard to debug it. Nginx provides interface for log errors, and you can additionally add `--with-debug` option to configure script. 
+Since nginx is a server software, it's not very easy to debug it. Nginx provides an interface for errors logging, and you can add the `--with-debug` option to the configuration script.
 
-IMP has IMP_DEBUG macro. It disabled by default, but you can uncomment it in `required.h`. This will enable some additional messages and also enable writes to syslog. If job was not successfull, you should see error like
+IMP has the IMP_DEBUG macro. It is disabled by default, but you can uncomment it in `required.h`. This will enable some additional messages and writing into syslog. If something has failed, you will see an error like this:
 
+	```
     imp::Job failed at step %d with code %d
-    
-Step codes, as well as error codes you can find in `required.h`.
+	```
+
+Step codes, as well as error codes, can be found in `required.h`.

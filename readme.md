@@ -1,32 +1,27 @@
-This is nginx module for runtime image processing based on OpenCV. It has basic features of [ngx\_http\_image\_filter\_module
-](http://nginx.org/en/docs/http/ngx\_http\_image\_filter\_module.html) but also provides some deep settings for it and implements a few filters which can be potentially used in web. Also OpenCV is pretty fast and can overcome libgd, ImageMagick or, in some cases, even VIPS. Module called ngx\_http\_imgproc, so I will call it just "IMP" below.
+This is nginx module for runtime image processing based on OpenCV. It has same basic features as [ngx\_http\_image\_filter\_module
+](http://nginx.org/en/docs/http/ngx\_http\_image\_filter\_module.html), plus provides some advanced configurations and implements a few filters, which can be potentially used in web. Also OpenCV is pretty fast and can beat libgd, ImageMagick and, in some cases, even VIPS. Module is named ngx\_http\_imgproc, so I will call it just "IMP" hereafter.
 
 **Things to know about IMP:**
 
-1. It tested only by me. All kinds of trouble is possible: unexpected behavior, lack of some features, misleading documents or even memory leaks. Therefore it's a good idea to not try it in production without a couple of days of testing. I would say IMP is an alpha stage now.
+1. It is tested only by me. Every kind of trouble is possible: unexpected behavior, lack of features, misleading documents or even memory leaks. Therefore it's a good idea not to use it in production without a couple of days of testing. I would say IMP is in alpha stage now.
 
-2. Nginx architecture makes it really fast, but also sensitive to heavy calculations. I really insist to compile IMP in separated nginx binary and run it as separated master process to avoid overall site slowdown in case of heavy image processing.
+2. Nginx architecture allows IMP to run really fast, but it is sensitive to heavy calculations. I hardly recommend to compile IMP as a separated nginx binary and run it as separated master process to avoid overall site slowdown in case of heavy image processing.
 
-3. Docs are in /docs/*.md.
+3. Docs are located in /docs/*.md.
 
-4. You'll need some experience in building apps from sources. I tried to cover as much as possible in "Installation.md", but you'll never know.
-
-5. You can do anything you want with the code, including using its parts or whole project, redistribute and stuff, but don't blame me if something works wrong. 
-
+4. You'll need some experience in building apps from sources. I've covered it as much as possible in "Installation.md", but you never know.
 
 **Pros:**
 
 - Advantages of fast IO by nginx
-- Easy results caching by nginx
-- Fast common image calculations (crop, resize, watermark) by openCV
-- Wide list of supported formats (**animated GIFs** included) by FreeImage
+- Easy results caching with nginx
+- Fast generic image manipulations (crop, resize, watermark) with openCV
+- Wide formats support (**animated GIFs** included) via FreeImage
 - Set of cool and useless filters by me and (mostly) StackOverflow
-- Dynamic processing configuration by GET params
+- Dynamic processing configuration via GET params
 
 **Cons:**
 
-All described above in "things to know":
-
-- Lack of testing / stability
-- Too sensitive to each request execution time
-- Complex installation workflow
+- Lack of stability
+- Each request execution time affects whole system performance
+- Complicated installation
