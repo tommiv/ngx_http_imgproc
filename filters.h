@@ -5,6 +5,7 @@ int  Modulate (IplImage** pointer, char* args);
 int  Colorize (IplImage** pointer, char* args);
 int  Blur     (IplImage** pointer, char* args);
 int  Gamma    (IplImage** pointer, char* args);
+int  Contrast (IplImage** pointer, char* args);
 int  Vignette (IplImage** pointer, char* args);
 int  Gotham   (IplImage** pointer, char* args);
 int  Lomo     (IplImage** pointer, char* args);

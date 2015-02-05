@@ -185,6 +185,20 @@ Does what it said.
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/uUO8Gmc.jpg)
 
 ---
+###contrast
+Does what it said.
+
+**Amount**. Required. Positive float. 1 means do nothing. Low values means black image.
+
+    # more contrast
+    filter-contrast=1.5
+![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/S0KzHF6.jpg)
+
+    # less contrast
+    filter-contrast=0.5
+![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/NtsGR8S.jpg)
+
+---
 ###experimental:vignette
 Makes lens vignette effect. Converted from [Browny's "fun with filters" project](https://github.com/browny/filters-fun).
 

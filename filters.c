@@ -14,6 +14,7 @@ static const struct {
 	{ "colorize" , Colorize , 0, 0 },
 	{ "blur"     , Blur     , 0, 1 },
 	{ "gamma"    , Gamma    , 0, 0 },
+	{ "contrast" , Contrast , 0, 0 },
 	{ "vignette" , Vignette , 1, 1 },
 	{ "gotham"   , Gotham   , 1, 0 },
 	{ "lomo"     , Lomo     , 1, 0 },
@@ -206,6 +207,15 @@ int Blur(IplImage** pointer, char* args) {
 
 int Gamma(IplImage** pointer, char* args) {
 	ApplyGamma(*pointer, strtof(args, NULL));
+	return IMP_OK;
+}
+
+int Contrast(IplImage** pointer, char* args) {
+	float value = strtof(args, NULL);
+	if (value <= 0) {
+		return IMP_ERROR_INVALID_ARGS;
+	}
+	BrightnessContrast(*pointer, 0, value);
 	return IMP_OK;
 }
 
