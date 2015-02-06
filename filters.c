@@ -244,7 +244,7 @@ int Gradmap(IplImage** pointer, char* args) {
 			break;
 		}
 
-		colors[step] = colors[step] = malloc(rgbl);
+		colors[step] = malloc(rgbl);
 		int i;
 		for (i = 0; i < rgbl; i++) {
 			char* token = malloc(tokl + 1);
