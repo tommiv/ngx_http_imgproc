@@ -246,7 +246,7 @@ Does what it says.
 
 Does what it says.
 
-**Amount**. Required. Positive float. 1 means "do nothing". Low values mean black image.
+**Amount**. Required. Positive float. 1 means "do nothing". Low values means black image.
 
     # more contrast
     filter-contrast=1.5
@@ -255,6 +255,26 @@ Does what it says.
     # less contrast
     filter-contrast=0.5
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/NtsGR8S.jpg)
+
+***
+
+### gradmap
+
+Applies gradient mapping – brightness of each pixel maps to a value of gradient provided in arguments. This effect is close to the "Gradient map" feature in Photoshop, but based on linear gradient generator.
+
+**Gradient colors**. Required. List of comma-separated hex RGB colors, 2-8 values. Only 6-chars format is supported. _Note: order of color values is important: left values will map to most dark colors of original picture and vice versa._
+
+    # mild
+    filter-gradmap=306090,eecc00
+![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/bpJlobm.jpg)
+
+    # inverse previous sample
+    filter-gradmap=306090,eecc00
+![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/ZFFc7Wr.jpg)
+
+    # multicolor in random order
+    filter-gradmap=203040,8080aa,cc60dd,000000
+![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/McL1bGs.jpg)
 
 ***
 

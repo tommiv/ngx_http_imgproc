@@ -6,6 +6,7 @@ int  Colorize (IplImage** pointer, char* args);
 int  Blur     (IplImage** pointer, char* args);
 int  Gamma    (IplImage** pointer, char* args);
 int  Contrast (IplImage** pointer, char* args);
+int  Gradmap  (IplImage** pointer, char* args);
 int  Vignette (IplImage** pointer, char* args);
 int  Gotham   (IplImage** pointer, char* args);
 int  Lomo     (IplImage** pointer, char* args);
@@ -21,6 +22,7 @@ int CheckDestructive(char* request);
 void ModulateHSV(IplImage* image, int* hsv);
 void ApplyGamma(IplImage* image, float gamma);
 int* CalculateGammaLUT(float gamma);
+unsigned char* CalculateGradientLUT(unsigned char** colors, int length);
 void BrightnessContrast(IplImage* image, float br, float ct);
 
 void AlphaBlendAddColor(IplImage* source, int* rgb, float alpha);

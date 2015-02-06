@@ -15,6 +15,7 @@ static const struct {
 	{ "blur"     , Blur     , 0, 1 },
 	{ "gamma"    , Gamma    , 0, 0 },
 	{ "contrast" , Contrast , 0, 0 },
+	{ "gradmap"  , Gradmap  , 0, 0 },
 	{ "vignette" , Vignette , 1, 1 },
 	{ "gotham"   , Gotham   , 1, 0 },
 	{ "lomo"     , Lomo     , 1, 0 },
@@ -217,6 +218,71 @@ int Contrast(IplImage** pointer, char* args) {
 	}
 	BrightnessContrast(*pointer, 0, value);
 	return IMP_OK;
+}
+
+int Gradmap(IplImage** pointer, char* args) {
+	int maxsteps = 8;
+	int rgbl = 3;
+	int tokl = 2;
+
+	unsigned char** colors = malloc(maxsteps * sizeof(unsigned char*));
+	int c;
+	for (c = 0; c < maxsteps; c++) colors[c] = NULL;
+
+	int step = 0;
+	int valid = 1;
+
+	char* inp = args;
+	char* context = NULL;
+	char* current = NULL;
+
+	while ((current = strtok_r(inp, ",", &context))) {
+		inp = NULL;
+
+		if (strlen(current) != 6) {
+			valid = 0;
+			break;
+		}
+
+		colors[step] = colors[step] = malloc(rgbl);
+		int i;
+		for (i = 0; i < rgbl; i++) {
+			char* token = malloc(tokl + 1);
+			memcpy(token, current + (i * tokl), tokl);
+			token[tokl] = '\0';
+			colors[step][i] = strtol(token, NULL, 16);
+			free(token);
+		}
+
+		step++;
+	}
+
+	if (valid) {
+		unsigned char* lut = NULL;
+		lut = CalculateGradientLUT(colors, step);
+		IplImage* image = *pointer;
+		int x, y;
+		for (x = 0; x < image->width; x++)
+		for (y = 0; y < image->height; y++) {
+			int offset = ((
+				cvGetComponent(image, x, y, CV_RGB_RED) + 
+				cvGetComponent(image, x, y, CV_RGB_GREEN) + 
+				cvGetComponent(image, x, y, CV_RGB_BLUE)
+			) / 3) * 3;
+
+			cvSetComponent(image, x, y, CV_RGB_RED  , lut[offset + 0]);
+			cvSetComponent(image, x, y, CV_RGB_GREEN, lut[offset + 1]);
+			cvSetComponent(image, x, y, CV_RGB_BLUE , lut[offset + 2]);
+		}
+		free(lut);
+	}
+
+	for (c = 0; c < maxsteps; c++) {
+		if (colors[c]) free(colors[c]);
+	}
+	free(colors);
+
+	return valid ? IMP_OK : IMP_ERROR_INVALID_ARGS;
 }
 
 // Original algorithm was designed to work in CIELab colorspace,
@@ -500,6 +566,29 @@ int* CalculateGammaLUT(float gamma) {
 	for (i = 0; i < size; i++) {
 		lut[i] = (int)(pow(i / 255.0, inverse) * 255.0);
 	}
+	return lut;
+}
+
+unsigned char* CalculateGradientLUT(unsigned char** colors, int length) {
+	int segments = length - 1;
+    int resolution = 256;
+    float innerResolution = resolution / (float)segments;
+
+    unsigned char* lut = malloc(resolution * 3);
+
+    int c, i, j, pointer = 0;
+    for (c = 0; c < segments; c++) {
+        unsigned char* from = colors[c];
+        unsigned char* to   = colors[c + 1];
+        for (i = 0; i < (int)innerResolution; i++) {
+            float step = i / innerResolution;
+            for (j = 0; j < 3; j++) {
+            	lut[pointer] = round(from[j] + step * (to[j] - from[j]));
+            	pointer++;
+            }
+        };
+    };
+
 	return lut;
 }
 
