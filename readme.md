@@ -11,6 +11,8 @@ This is a nginx module for runtime image processing based on OpenCV. It has same
 
 4. You'll need some experience in building apps from sources. I've covered it as much as possible in "Installation.md", but you never know.
 
+5. License is [WTFPL 2.0](http://www.wtfpl.net/about/).
+
 **Pros:**
 
 - Advantages of fast IO by nginx
