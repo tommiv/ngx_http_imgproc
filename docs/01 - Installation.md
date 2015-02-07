@@ -4,7 +4,7 @@
 
 All tips in this doc are related to Ubuntu 12.04. If you use less popular OS, it's up to you to do all the stuff below in some other way.
 
-First, you will need **git**. If you don't have git, just install it with package manager:
+First, you will need **git**. If you don't have git, just install it with the package manager:
 
 ```
 sudo apt-get install git
@@ -22,7 +22,7 @@ sudo apt-get upgrade
 sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev
 ```
 
-Download sources. You can do it with wget, but the source is stored on SourceForge which has its own handler for downloads. It's much easier to download the source code with your favorite browser and put it to your server via SFTP client. Get your copy [here](http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.9/opencv-2.4.9.zip/download). I put mine into /var/opt/src/OpenCV.
+Download sources. You can do it with wget, but the source is stored on SourceForge which has its own handler for downloads. It's much easier to download the source code with your favorite browser and put it to your server via an SFTP client. Get your copy [here](http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.9/opencv-2.4.9.zip/download). I put mine into /var/opt/src/OpenCV.
 
 It's compile time:
 
@@ -99,7 +99,7 @@ cd ..
 git clone https://github.com/nginx/nginx.git
 ```
 
-**[Optional].** You can download `pcre`, `openssh` and/or `zlib`. They are used by nginx some modules, but not required when you build IMP-enabled nginx as a separate service. As for me, I downloaded `pcre`.
+**[Optional].** You can download `pcre`, `openssh` and/or `zlib`. They are used by some nginx modules, but not required when you build IMP-enabled nginx as a separate service. As for me, I downloaded `pcre`.
 
 ***
 
@@ -113,7 +113,7 @@ git clone https://github.com/tommiv/ngx_http_imgproc.git
 
 ## It's build time
 
-I assume you are still in `/var/opt/src` and you have all required sources here: nginx, optional pcre|libssh|zlib and IMP.
+I assume you are still in `/var/opt/src` and you have all the required sources here: nginx, optional pcre|libssh|zlib and IMP.
 
 ```
 cd nginx
@@ -123,17 +123,17 @@ Write the configure line for nginx:
 
 ```
 ./configure \
---prefix=/var/opt/bin/nginx-imp \
---sbin-path=./ \
---conf-path=./conf/nginx.conf \
---pid-path=./nginx.pid \
---without-http_rewrite_module \
---add-module=../ngx_http_imgproc
+    --prefix=/var/opt/bin/nginx-imp \
+    --sbin-path=./ \
+    --conf-path=./conf/nginx.conf \
+    --pid-path=./nginx.pid \
+    --without-http_rewrite_module \
+    --add-module=../ngx_http_imgproc
 ```
 
 You can just copy/paste it if `/var/opt/bin/nginx-imp` binary path is OK for you. If you've downloaded any additional libs like zlib, you can add them to configure command, as described [here](http://wiki.nginx.org/InstallOptions).
 
-Wait until configure is finished. If you don't see an "error" word, everyting is OK.
+Wait until `configure` is finished. If you don't see an "error" word, everyting is OK.
 
 Now is your chance. Type:
 
@@ -147,7 +147,7 @@ If you're lucky enough, you'll see a compiler message saying everything is compl
 objs/nginx
 ```
 
-You'll see message about not found log and config files. It's OK, proceed to configuration step.
+You'll see a message about not founding log and config files. It's OK, proceed to configuration step.
 
 If you see "not found" message, compilation was unsuccessful.
 
@@ -181,9 +181,9 @@ and start configuring the service.
 
 Based on <s>actual events</s> [this article](http://articles.slicehost.com/2007/10/17/ubuntu-lts-adding-an-nginx-init-script).
 
-If you used the same binary path as me, just put `/docs/nginx-imp` script to `/etc/init.d/`. Otherwise open it first and replace DAEMON and PIDFILE variables at lines 15-16 with your own values.
+If you used the same binary path as me, just put `/docs/nginx-imp` script to `/etc/init.d/`. Otherwise open it first and replace DAEMON and PIDFILE values at lines 15-16 with your own ones.
 
-Make script executable
+Make the script executable
 
 ```
 sudo chmod +x /etc/init.d/nginx-imp
@@ -240,7 +240,7 @@ cd /var/opt/src/nginx
 make
 ```
 
-If you'll see errors, try to re-run `./configure` as described in **It's build time** section and run `make` again.
+If you see errors, try to re-run `./configure` as described in **It's build time** section and run `make` again.
 
 Replace binary
 
@@ -312,17 +312,17 @@ There's no prepared image, but it's definetely possible to build it. Here is a s
     ./build.sh
     ```
 
-5. If build process succeeds, you need to add the `daemon off` directive in /etc/nginx-imp/conf/nginx.conf. It's really important since docker will close container if nginx daemonizes itself.
+5. If the build process succeeds, you need to add the `daemon off` directive into /etc/nginx-imp/conf/nginx.conf. It's really important since docker will close container if nginx daemonizes itself.
 
 6. Finally, you can run the container
 
     ```
     docker run -d \
-    -p 127.0.0.10:80:80 \
-    -v /etc/nginx-imp/conf:/var/opt/bin/nginx-imp/conf \
-    -v /etc/nginx-imp/logs:/var/opt/bin/nginx-imp/logs \
-    -v /var/www/imp:/var/www \
-    nginx_imp
+        -p 127.0.0.10:80:80 \
+        -v /etc/nginx-imp/conf:/var/opt/bin/nginx-imp/conf \
+        -v /etc/nginx-imp/logs:/var/opt/bin/nginx-imp/logs \
+        -v /var/www/imp:/var/www \
+        nginx_imp
     ```
 
-    Here we set explicit IP, mount volumes from host to container with config and logs, and also www folder. Of course, you can change paths as you wish. Remove `-d` key to view emerge nginx alerts if something went wrong. If no errors were thrown, check `docker ps` to ensure container is still running. If so, you can put any image to host `/var/www/imp` and try to process it: `curl 127.0.0.10/test.jpg?resize=16` (sorry, this will flood your terminal with unreadable binary data).
+    Here we set an explicit IP, mount volumes from a host to the container with a config and logs, and also www folder. Of course, you can change paths as you wish. Remove `-d` key to view emerge nginx alerts if something goes wrong. If no errors are thrown, check `docker ps` to ensure the container is still running. If this is so, you can put any image to the host `/var/www/imp` and try to process it: `curl 127.0.0.10/test.jpg?resize=16` (sorry, this will flood your terminal with unreadable binary data).

@@ -1,9 +1,9 @@
-This is nginx module for runtime image processing based on OpenCV. It has same basic features as [ngx\_http\_image\_filter\_module
-](http://nginx.org/en/docs/http/ngx\_http\_image\_filter\_module.html), plus provides some advanced configurations and implements a few filters, which can be potentially used in web. Also OpenCV is pretty fast and can beat libgd, ImageMagick and, in some cases, even VIPS. Module is named ngx\_http\_imgproc, so I will call it just "IMP" hereafter.
+This is a nginx module for runtime image processing based on OpenCV. It has same basic features as [ngx\_http\_image\_filter\_module
+](http://nginx.org/en/docs/http/ngx\_http\_image\_filter\_module.html), plus provides some advanced configurations and implements a few filters, which can be potentially used on the web. Also OpenCV is pretty fast and can beat libgd, ImageMagick and, in some cases, even VIPS. The module is named ngx\_http\_imgproc, so I will call it just "IMP" hereafter.
 
 **Things to know about IMP:**
 
-1. It is tested only by me. Every kind of trouble is possible: unexpected behavior, lack of features, misleading documents or even memory leaks. Therefore it's a good idea not to use it in production without a couple of days of testing. I would say IMP is in alpha stage now.
+1. It is tested by me only. Every kind of trouble are possible: unexpected behavior, lack of features, misleading documents or even memory leaks. Therefore it's a good idea not to use it in production without a couple of days of testing. I would say IMP is in alpha stage now.
 
 2. Nginx architecture allows IMP to run really fast, but it is sensitive to heavy calculations. I hardly recommend to compile IMP as a separated nginx binary and run it as separated master process to avoid overall site slowdown in case of heavy image processing.
 
