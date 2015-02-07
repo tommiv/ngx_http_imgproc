@@ -36,8 +36,8 @@ Since nginx is a server software, it's not very easy to debug it. Nginx provides
 
 IMP has the IMP_DEBUG macro. It is disabled by default, but you can uncomment it in `required.h`. This will enable some additional messages and writing into syslog. If something has failed, you will see an error like this:
 
-	```
-    imp::Job failed at step %d with code %d
-	```
+```
+imp::Job failed at step %d with code %d
+```
 
 Step codes, as well as error codes, can be found in `required.h`.

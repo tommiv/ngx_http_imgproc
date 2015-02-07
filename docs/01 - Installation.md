@@ -6,9 +6,9 @@ All tips in this doc are related to Ubuntu 12.04. If you use less popular OS, it
 
 First, you will need **git**. If you don't have git, just install it with package manager:
 
-    ```
-    sudo apt-get install git
-    ```
+```
+sudo apt-get install git
+```
 
 ***
 
@@ -16,41 +16,41 @@ First, you will need **git**. If you don't have git, just install it with packag
 
 You will need OpenCV. It's [official site](http://opencv.org/) suggests to compile it from source.
 
-    ```
-    sudo apt-get update
-    sudo apt-get upgrade
-    sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev
-    ```
+```
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install build-essential cmake libgtk2.0-dev python-dev python-numpy libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev
+```
 
 Download sources. You can do it with wget, but the source is stored on SourceForge which has its own handler for downloads. It's much easier to download the source code with your favorite browser and put it to your server via SFTP client. Get your copy [here](http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.9/opencv-2.4.9.zip/download). I put mine into /var/opt/src/OpenCV.
 
 It's compile time:
 
-    ```
-    cd /var/opt/src/OpenCV
-    cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local .
-    ```
+```
+cd /var/opt/src/OpenCV
+cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local .
+```
 
 If configure was ok, run:
 
-    ```
-    make
-    sudo make install
-    ```
+```
+make
+sudo make install
+```
 
 This will take... a while.
 
 **[Optional]**. Probably your ldconfig already knows about `/usr/local/lib`, but if you get a message that dynamic library is not found, put
 
-    ```
-    /usr/local/lib
-    ```
+```
+/usr/local/lib
+```
 
 to /etc/ld.so.conf and update binding:
 
-    ```
-    sudo ldconfig
-    ```
+```
+sudo ldconfig
+```
 
 ***
 
@@ -64,9 +64,9 @@ Before you start, there is a **huge caveat**: it will probably install version 3
 
 If you are OK with this, just run:
 
-    ```
-    sudo apt-get install libfreeimage-dev
-    ```
+```
+sudo apt-get install libfreeimage-dev
+```
 
 Otherwise...
 
@@ -76,28 +76,28 @@ Otherwise...
 
 2. Download and unpack it.
 
-    ```
-    cd /var/opt/src
-    wget http://downloads.sourceforge.net/freeimage/FreeImage3160.zip
-    unzip FreeImage3160.zip
-    ```
+  ```
+  cd /var/opt/src
+  wget http://downloads.sourceforge.net/freeimage/FreeImage3160.zip
+  unzip FreeImage3160.zip
+  ```
 
 3. Compile and install
 
-    ```
-    cd FreeImage
-    make
-    sudo make install
-    ```
+  ```
+  cd FreeImage
+  make
+  sudo make install
+  ```
 
 ***
 
 ## Get nginx sources
 
-    ```
-    cd ..
-    git clone https://github.com/nginx/nginx.git
-    ```
+```
+cd ..
+git clone https://github.com/nginx/nginx.git
+```
 
 **[Optional].** You can download `pcre`, `openssh` and/or `zlib`. They are used by nginx some modules, but not required when you build IMP-enabled nginx as a separate service. As for me, I downloaded `pcre`.
 
@@ -105,9 +105,9 @@ Otherwise...
 
 ## Get IMP sources
 
-    ```
-    git clone https://github.com/tommiv/ngx_http_imgproc.git
-    ```
+```
+git clone https://github.com/tommiv/ngx_http_imgproc.git
+```
 
 ***
 
@@ -115,21 +115,21 @@ Otherwise...
 
 I assume you are still in `/var/opt/src` and you have all required sources here: nginx, optional pcre|libssh|zlib and IMP.
 
-    ```
-    cd nginx
-    ```
+```
+cd nginx
+```
 
 Write the configure line for nginx:
 
-    ```
-    ./configure \
-        --prefix=/var/opt/bin/nginx-imp \
-        --sbin-path=./ \
-        --conf-path=./conf/nginx.conf \
-        --pid-path=./nginx.pid \
-        --without-http_rewrite_module \
-        --add-module=../ngx_http_imgproc
-    ```
+```
+./configure \
+--prefix=/var/opt/bin/nginx-imp \
+--sbin-path=./ \
+--conf-path=./conf/nginx.conf \
+--pid-path=./nginx.pid \
+--without-http_rewrite_module \
+--add-module=../ngx_http_imgproc
+```
 
 You can just copy/paste it if `/var/opt/bin/nginx-imp` binary path is OK for you. If you've downloaded any additional libs like zlib, you can add them to configure command, as described [here](http://wiki.nginx.org/InstallOptions).
 
@@ -137,15 +137,15 @@ Wait until configure is finished. If you don't see an "error" word, everyting is
 
 Now is your chance. Type:
 
-    ```
-    make
-    ```
+```
+make
+```
 
 If you're lucky enough, you'll see a compiler message saying everything is complete. Check for it:
 
-    ```
-    objs/nginx
-    ```
+```
+objs/nginx
+```
 
 You'll see message about not found log and config files. It's OK, proceed to configuration step.
 
@@ -159,19 +159,19 @@ If you see `libdc1394 error: Failed to initialize libdc1394` – don't worry too
 
 Make dirs. Copy nginx binary and config stub to the working directory
 
-    ```
-    mkdir /var/opt/bin/nginx-imp
-    mkdir /var/opt/bin/nginx-imp/conf
-    mkdir /var/opt/bin/nginx-imp/logs
-    cp objs/nginx /var/opt/bin/nginx-imp/
-    cp conf/* /var/opt/bin/nginx-imp/conf
-    ```
+```
+mkdir /var/opt/bin/nginx-imp
+mkdir /var/opt/bin/nginx-imp/conf
+mkdir /var/opt/bin/nginx-imp/logs
+cp objs/nginx /var/opt/bin/nginx-imp/
+cp conf/* /var/opt/bin/nginx-imp/conf
+```
 
 We're done here. You can go to the destination folder
 
-    ```
-    cd /var/opt/bin/nginx-imp
-    ```
+```
+cd /var/opt/bin/nginx-imp
+```
 
 and start configuring the service.
 
@@ -185,39 +185,39 @@ If you used the same binary path as me, just put `/docs/nginx-imp` script to `/e
 
 Make script executable
 
-    ```
-    sudo chmod +x /etc/init.d/nginx-imp
-    ```
+```
+sudo chmod +x /etc/init.d/nginx-imp
+```
 
 Update run levels
 
-    ```
-    sudo /usr/sbin/update-rc.d -f nginx-imp defaults
-    ```
+```
+sudo /usr/sbin/update-rc.d -f nginx-imp defaults
+```
 
 That's all, now you can use
 
-    ```
-    service nginx-imp start
-    service nginx-imp stop
-    service nginx-imp reload
-    ```
+```
+service nginx-imp start
+service nginx-imp stop
+service nginx-imp reload
+```
 
 to control IMP.
 
 If you don't want to do this crazy stuff, you can run IMP with
 
-    ```
-    /var/opt/bin/nginx-imp/nginx
-    ```
+```
+/var/opt/bin/nginx-imp/nginx
+```
 
 And use signals to stop/restart the service
 
-    ```
-    /var/opt/bin/nginx-imp/nginx -s %signal%
-    i.e.
-    /var/opt/bin/nginx-imp/nginx -s stop
-    ```
+```
+/var/opt/bin/nginx-imp/nginx -s %signal%
+i.e.
+/var/opt/bin/nginx-imp/nginx -s stop
+```
 
 ***
 
@@ -225,30 +225,30 @@ And use signals to stop/restart the service
 
 Pull new nginx and/or IMP sources
 
-    ```
-    cd /var/opt/src/nginx
-    git pull origin master
+```
+cd /var/opt/src/nginx
+git pull origin master
 
-    cd /var/opt/src/ngx_http_imgproc
-    git pull origin master
-    ```
+cd /var/opt/src/ngx_http_imgproc
+git pull origin master
+```
 
 Run make inside
 
-    ```
-    cd /var/opt/src/nginx
-    make
-    ```
+```
+cd /var/opt/src/nginx
+make
+```
 
 If you'll see errors, try to re-run `./configure` as described in **It's build time** section and run `make` again.
 
 Replace binary
 
-    ```
-    service nginx-imp stop
-    cp objs/nginx /var/opt/bin/nginx-imp/
-    service nginx-imp start
-    ```
+```
+service nginx-imp stop
+cp objs/nginx /var/opt/bin/nginx-imp/
+service nginx-imp start
+```
 
 ***
 

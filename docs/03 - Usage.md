@@ -2,10 +2,10 @@
 
 Most of image operations (except watermark) are configured via query string. You can expose it directly, or wrap in your nginx config, as shown above. Simple query example is:
 
-    ```
-    # this will create lightweight 120x120px thumbnail
-    http://example.com/imgproc/sample.jpg?crop=1,1,c,c&resize=120,0&quality=60
-    ```
+```
+# this will create lightweight 120x120px thumbnail
+http://example.com/imgproc/sample.jpg?crop=1,1,c,c&resize=120,0&quality=60
+```
 
 All operations arguments are comma-separated. In case of unrecoverable errors in query (typos, unexisting operations, wrong arguments types or count, arguments outside allowed ranges) IMP will return *400 Bad Request*. When using optional arguments, you **must** bypass all preceding args. I.e. if operation has required arg0 and arg1 and optional arg2, arg3 and arg4, and you want to set arg3, your method call should be *operation=arg0,arg1,arg2,arg3*.
 
@@ -17,38 +17,38 @@ Crop arguments include dimensions and gravity. Dimension can be a relative (crop
 
 **Gravity**. Pair of chars in order x-axis,y-axis. Optional. Defaults to *c,t*. Options:
 
-    ```
-    c – center
-    t – top
-    b – bottom
-    l – left
-    r – right
-    ```
+```
+c – center
+t – top
+b – bottom
+l – left
+r – right
+```
 
 Samples:
 
-    ```
-    # square, reposition to center-top
-    crop=1,1
-    ```
+```
+# square, reposition to center-top
+crop=1,1
+```
 ![Imgur](http://i.imgur.com/XigrLA5.jpg) ![Imgur](http://i.imgur.com/Q5eZrdn.jpg)
 
-    ```
-    # square, reposition to right-bottom
-    crop=1,1,r,b
-    ```
+```
+# square, reposition to right-bottom
+crop=1,1,r,b
+```
 ![Imgur](http://i.imgur.com/XigrLA5.jpg) ![Imgur](http://i.imgur.com/ittVdj5.jpg)
 
-    ```
-    # 16:9, to left-top
-    crop=16,9,l,t
-    ```
+```
+# 16:9, to left-top
+crop=16,9,l,t
+```
 ![Imgur](http://i.imgur.com/XigrLA5.jpg) ![Imgur](http://i.imgur.com/o7tvatj.jpg)
 
-    ```
-    # absolute values
-    crop=400px,200px,c,t
-    ```
+```
+# absolute values
+crop=400px,200px,c,t
+```
 ![Imgur](http://i.imgur.com/XigrLA5.jpg) ![Imgur](http://i.imgur.com/MuJhcmY.jpg)
 
 ## Resize
@@ -57,18 +57,18 @@ Samples:
 
 **Allow Upscale**. Optional. By default, upscale is disabled. If you want to upscale an image, set *up* keyword as 3rd argument. Note, that IMP will still respect *imgproc\_max\_target\_dimensions* config option in such case.
 
-IMP will use `CV\_INTER\_CUBIC` filter for upscale, `CV\_INTER\_AREA` for downscale and `CV\_INTER\_NN` for GIF files in both axes.
+IMP will use `CV_INTER_CUBIC` filter for upscale, `CV_INTER_AREA` for downscale and `CV_INTER_NN` for GIF files in both axes.
 
-    ```
-    # just resize to 1000px width, keep aspect ratio
-    resize=1000
-    # resize to 1000x600px, don't preserve ratio
-    resize=1000,600
-    # resize to 300px height, keep ratio
-    resize=0,300
-    # allow upscale
-    resize=1400,0,up
-    ```
+```
+# just resize to 1000px width, keep aspect ratio
+resize=1000
+# resize to 1000x600px, don't preserve ratio
+resize=1000,600
+# resize to 300px height, keep ratio
+resize=0,300
+# allow upscale
+resize=1400,0,up
+```
 
 ## Filters
 
@@ -90,22 +90,22 @@ Mirrors an image.
 
 **Direction**. It's a bitmask where less significant (the right one) is vertical flip (around X axis) and most significant is horizontal (around Y axis). Can be one of constants: `00`, `01`, `11`, `10`. All other values will cause *400 Bad Request*.
 
-    ```
-    # vertical
-    filter-flip=01
-    ```
+```
+# vertical
+filter-flip=01
+```
 ![Imgur](http://i.imgur.com/RLk8eY1.jpg) ![Imgur](http://i.imgur.com/sxCmswi.jpg)
 
-    ```
-    # horizontal
-    filter-flip=10
-    ```
+```
+# horizontal
+filter-flip=10
+```
 ![Imgur](http://i.imgur.com/RLk8eY1.jpg) ![Imgur](http://i.imgur.com/p7He5xA.jpg)
 
-    ```
-    # both
-    filter-flip=11
-    ```
+```
+# both
+filter-flip=11
+```
 ![Imgur](http://i.imgur.com/RLk8eY1.jpg) ![Imgur](http://i.imgur.com/SEe3XBc.jpg)
 
 ***
@@ -116,10 +116,10 @@ Does exactly what it says.
 
 **Degrees**. Only orthogonal values are supported: 90, 180, 270. All other values will lead to *400 Bad Request*.
 
-    ```
-    # rotate upside down
-    fiter-rotate=180
-    ```
+```
+# rotate upside down
+fiter-rotate=180
+```
 
 ***
 
@@ -131,31 +131,31 @@ Operations with image perception in HSV colorspace.
 
 **Saturation**. Required. Any integer.
 
-    ```
-    [ 101 –  xxx] – oversaturation
-    [   0 –   99] – desaturation
-    [ 100 –  100] – intact
-    [-xxx –   -1] – funny side effect of negative addition
-    ```
+```
+[ 101 –  xxx] – oversaturation
+[   0 –   99] – desaturation
+[ 100 –  100] – intact
+[-xxx –   -1] – funny side effect of negative addition
+```
 
 **Brightness**. Required. Any positive integer. Values <= 0 lead to totally black image, so IMP will throw *400 Bad Request*.
 
-    ```
-    # grayscale
-    filter-modulate=100,0,100
-    ```
+```
+# grayscale
+filter-modulate=100,0,100
+```
 ![Imgur](http://i.imgur.com/aRMnAAD.jpg) ![Imgur](http://i.imgur.com/LX7eA4a.jpg)
 
-    ```
-    # acid colors
-    filter-modulate=100,500,500
-    ```
+```
+# acid colors
+filter-modulate=100,500,500
+```
 ![Imgur](http://i.imgur.com/aRMnAAD.jpg) ![Imgur](http://i.imgur.com/I5GMhTD.jpg)
 
-    ```
-    # psycho
-    filter-modulate=60,100,100
-    ```
+```
+# psycho
+filter-modulate=60,100,100
+```
 ![Imgur](http://i.imgur.com/aRMnAAD.jpg) ![Imgur](http://i.imgur.com/lFEIYff.jpg)
 
 ***
@@ -168,16 +168,16 @@ Renders color overlay. Can be especially good in combination with grayscale filt
 
 **Opacity**. Optional. Normalized float in range 0–1. Defaults to `0.5`.
 
-    ```
-    # half-strong red overlay
-    filter-colorize=ff0000
-    ```
+```
+# half-strong red overlay
+filter-colorize=ff0000
+```
 ![Imgur](http://i.imgur.com/92ntoI8.jpg) ![Imgur](http://i.imgur.com/7PloMlW.jpg)
 
-    ```
-    # faded with warm sepia tone
-    filter-modulate=0,0,100&filter-colorize=704214,0.6
-    ```
+```
+# faded with warm sepia tone
+filter-modulate=0,0,100&filter-colorize=704214,0.6
+```
 ![Imgur](http://i.imgur.com/92ntoI8.jpg) ![Imgur](http://i.imgur.com/fAfa0fu.jpg)
 
 ***
@@ -188,28 +188,28 @@ Applies blur with `CV_GAUSSIAN` kernel.
 
 **Sigma**. Required. Any positive float. While OpenCV has some more arguments to pass in cvSmooth, sigma is the one which almost linearly describes effect intensity.
 
-    ```
-    # light blur
-    filter-blur=2
-    ```
+```
+# light blur
+filter-blur=2
+```
 ![Imgur](http://i.imgur.com/MlXqlbI.jpg) ![Imgur](http://i.imgur.com/a6HhLzB.jpg)
 
-    ```
-    # medium blur
-    filter-blur=6
-    ```
+```
+# medium blur
+filter-blur=6
+```
 ![Imgur](http://i.imgur.com/MlXqlbI.jpg) ![Imgur](http://i.imgur.com/1t7UJtj.jpg)
 
-    ```
-    # heavy blur
-    filter-blur=12
-    ```
+```
+# heavy blur
+filter-blur=12
+```
 ![Imgur](http://i.imgur.com/MlXqlbI.jpg) ![Imgur](http://i.imgur.com/m8s79ZE.jpg)
 
-    ```
-    # what is this I don't even blur
-    filter-blur=25
-    ```
+```
+# what is this I don't even blur
+filter-blur=25
+```
 ![Imgur](http://i.imgur.com/MlXqlbI.jpg) ![Imgur](http://i.imgur.com/XijznxG.jpg)
 
 *Note*: blur execution time is proportional to sigma, but it's not so critical on any reasonable value.
@@ -222,22 +222,22 @@ Does what it says.
 
 **Amount**. Required. Any float. 0 means black image, 1 means "do nothing". Negative values may cause psycho side-effects.
 
-    ```
-    # more light
-    filter-gamma=1.3
-    ```
+```
+# more light
+filter-gamma=1.3
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/M3WCTle.jpg)
 
-    ```
-    # less light
-    filter-gamma=0.5
-    ```
+```
+# less light
+filter-gamma=0.5
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/oJHDcOF.jpg)
 
-    ```
-    # just for fun
-    filter-gamma=-0.1
-    ```
+```
+# just for fun
+filter-gamma=-0.1
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/uUO8Gmc.jpg)
 
 ***
@@ -248,12 +248,16 @@ Does what it says.
 
 **Amount**. Required. Positive float. 1 means "do nothing". Low values means black image.
 
-    # more contrast
-    filter-contrast=1.5
+```
+# more contrast
+filter-contrast=1.5
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/S0KzHF6.jpg)
 
-    # less contrast
-    filter-contrast=0.5
+```
+# less contrast
+filter-contrast=0.5
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/NtsGR8S.jpg)
 
 ***
@@ -264,16 +268,22 @@ Applies gradient mapping – brightness of each pixel maps to a value of gradien
 
 **Gradient colors**. Required. List of comma-separated hex RGB colors, 2-8 values. Only 6-chars format is supported. _Note: order of color values is important: left values will map to most dark colors of original picture and vice versa._
 
-    # mild
-    filter-gradmap=306090,eecc00
+```
+# mild
+filter-gradmap=306090,eecc00
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/bpJlobm.jpg)
 
-    # inverse previous sample
-    filter-gradmap=306090,eecc00
+```
+# inverse previous sample
+filter-gradmap=306090,eecc00
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/ZFFc7Wr.jpg)
 
-    # multicolor in random order
-    filter-gradmap=203040,8080aa,cc60dd,000000
+```
+# multicolor in random order
+filter-gradmap=203040,8080aa,cc60dd,000000
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/McL1bGs.jpg)
 
 ***
@@ -286,28 +296,28 @@ Makes lens vignette effect. Ported from [Browny's "fun with filters" project](ht
 
 **Radius**. Optional. Any float. Default is 1. Usually this should be about 75-125% of intensity. Really small values cause cool side-effects such as ripple or web overlay.
 
-    ```
-    # mild
-    filter-vignette=0.8
-    ```
+```
+# mild
+filter-vignette=0.8
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/ev6eaae.jpg)
 
-    ```
-    # hard
-    filter-vignette=4,3
-    ```
+```
+# hard
+filter-vignette=4,3
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/mdVLfVO.jpg)
 
-    ```
-    # fast ripple
-    filter-vignette=4,0.1
-    ```
+```
+# fast ripple
+filter-vignette=4,0.1
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/vAey4eB.jpg)
 
-    ```
-    # web
-    filter-vignette=4,0.00005
-    ```
+```
+# web
+filter-vignette=4,0.00005
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/cCEE0g4.jpg)
 
 ***
@@ -334,16 +344,16 @@ A-la old TV tube picture with interlaced lines. Just for fun.
 
 **Height**. Optional. Any positive integer. Default is 1. Height of a line in pixels.
 
-    ```
-    # Normal
-    filter-scanline=0
-    ```
+```
+# Normal
+filter-scanline=0
+```
 ![Imgur](http://i.imgur.com/ATY1LQQ.jpg) ![Imgur](http://i.imgur.com/bZI2nGp.jpg)
 
-    ```
-    # Big white lines
-    filter-scanline=1,0,10,2
-    ```
+```
+# Big white lines
+filter-scanline=1,0,10,2
+```
 ![Imgur](http://i.imgur.com/ATY1LQQ.jpg) ![Imgur](http://i.imgur.com/eVf7jfz.jpg)
 
 ***
@@ -351,9 +361,9 @@ A-la old TV tube picture with interlaced lines. Just for fun.
 ### experimental:instagram:gotham
 Noir filter for sad souls. Black border can be easily added via CSS. There are no parameters for this filter. Just pass anything after `=`.
 
-    ```
-    filter-gotham=1
-    ```
+```
+filter-gotham=1
+```
 ![Imgur](http://i.imgur.com/GwBpQXT.jpg) ![Imgur](http://i.imgur.com/2GAsM6S.jpg)
 
 ***
@@ -362,16 +372,16 @@ Noir filter for sad souls. Black border can be easily added via CSS. There are n
 
 Very popular filter with strong image color distortion. There are no parameters for this filter, just pass anything after `=`. Looks better in combination with vignette, so try it with *filter-vignette=...* after lomo, if you want.
 
-    ```
-    # standard
-    filter-lomo=1&filter-vignette=1
-    ```
+```
+# standard
+filter-lomo=1&filter-vignette=1
+```
 ![Imgur](http://i.imgur.com/rKXWrLE.jpg) ![Imgur](http://i.imgur.com/x9ETdbL.jpg)
 
-    ```
-    # standalone lomo (no vignette)
-    filter-lomo=1
-    ```
+```
+# standalone lomo (no vignette)
+filter-lomo=1
+```
 ![Imgur](http://i.imgur.com/rKXWrLE.jpg) ![Imgur](http://i.imgur.com/lU8GzHN.jpg)
 
 ***
@@ -380,22 +390,22 @@ Very popular filter with strong image color distortion. There are no parameters 
 
 The yellow one. There are no parameters for this filter. Border is not included. It actually has flow in blend mode, so it "eats" red color, but I believe no one cares.
 
-    ```
-    # no comments
-    filter-kelvin=1
-    ```
+```
+# no comments
+filter-kelvin=1
+```
 ![Imgur](http://i.imgur.com/rKXWrLE.jpg) ![Imgur](http://i.imgur.com/XsOc6uT.jpg)
 
 ## Format
 
 You can convert your image to one of popular web formats. Content-Type header will be set respectively. Some formats below support only output (for example, you cannot _read_ picture from JSON, only _write_ info in JSON format to output). Some formats support quality options.
 
-    ```
-    format=jpg&quality=70
-    format=webp
-    format=json
-    format=text&quality=wide
-    ```
+```
+format=jpg&quality=70
+format=webp
+format=json
+format=text&quality=wide
+```
 
 #### Support list
 
@@ -433,9 +443,9 @@ You can convert your image to one of popular web formats. Content-Type header wi
 
 This directive allows to get an exact frame from a multipaged image. If `page` argument value is above total frames count, 1st frame will be returned.
 
-    ```
-    crop=1,1,c,c&filter-gotham=1&page=10
-    ```
+```
+crop=1,1,c,c&filter-gotham=1&page=10
+```
 
 ![Imgur](http://i.imgur.com/uk5VI6O.gif)
 ![Imgur](http://i.imgur.com/5tpbquW.jpg)
