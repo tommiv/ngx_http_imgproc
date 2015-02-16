@@ -54,12 +54,12 @@
 #define IMP_STEP_ENCODE    8
 
 // MIME types
-#define IMP_MIME_INTACT 0
-#define IMP_MIME_JPG    1
-#define IMP_MIME_PNG    2
-#define IMP_MIME_JSON   3
-#define IMP_MIME_ADVIO  4
-#define IMP_MIME_TEXT   5
+#define IMP_MIME_INTACT  0
+#define IMP_MIME_JPG    -1
+#define IMP_MIME_PNG    -2
+#define IMP_MIME_JSON   -3
+#define IMP_MIME_ADVIO  -4
+#define IMP_MIME_TEXT   -5
 
 // Various openCV-related const
 #define CV_HUE_WHEEL_RESOLUTION 180
