@@ -479,6 +479,9 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 					else if (!strcmp(quality, "jpeg"   )) advancedCoderopt = TIFF_JPEG;
 					else if (!strcmp(quality, "none"   )) advancedCoderopt = TIFF_NONE;
 				break;
+				case FIF_JPEG:
+					advancedCoderopt = quantizer;
+				break;
 			}
 		#endif
 	}
