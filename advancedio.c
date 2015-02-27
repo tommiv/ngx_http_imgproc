@@ -176,6 +176,13 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
         result->Frames[frameid].TransparencyKey = FreeImage_GetTransparentIndex(frame);
         
         RGBQUAD* palette = FreeImage_GetPalette(frame);
+
+        unsigned int depth = FreeImage_GetBPP(frame);
+        if (depth != 8) {
+            FIBITMAP* ready = FreeImage_ConvertTo8Bits(frame);
+            FreeImage_UnlockPage(container, frame, 0);
+            frame = ready;
+        }
         
         IplImage* image = cvCreateImage(cvSize(canvasW, canvasH), IPL_DEPTH_8U, 4);
         if (!image->imageData) {
@@ -240,7 +247,11 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
             }
         }
 
-        FreeImage_UnlockPage(container, frame, 0);
+        if (depth != 8) {
+            FreeImage_UnlockPage(container, frame, 0);
+        } else {
+            FreeImage_Unload(frame);
+        }
 
         if (frameid == page) {
             break;
