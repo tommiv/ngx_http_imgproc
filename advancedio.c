@@ -247,7 +247,7 @@ static void LoadGIF(Album* result, FIMEMORY* mem, ngx_pool_t* pool, int isdestru
             }
         }
 
-        if (depth != 8) {
+        if (depth == 8) {
             FreeImage_UnlockPage(container, frame, 0);
         } else {
             FreeImage_Unload(frame);
