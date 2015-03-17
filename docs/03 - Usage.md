@@ -51,6 +51,15 @@ crop=400px,200px,c,t
 ```
 ![Imgur](http://i.imgur.com/XigrLA5.jpg) ![Imgur](http://i.imgur.com/MuJhcmY.jpg)
 
+## Gravity
+Way to override gravity in crop. Has higher priority. Useful only when you are hiding IMP behind proxy, but looking for ability to set gravity directly (to emphasize region with payload). Arguments are in the same format as for `crop` gravity.
+
+```
+# override center-center gravity
+crop=1,1,c,c&gravity=r,b
+crop=1,1,c,c&gravity=l,c
+```
+
 ## Resize
 
 **Width and height**. To make IMP preserve aspect ratio, set a value for only one dimension and 0 for another one. Setting both values to positive integers will perform resize to exact given size, ignoring aspect ratio.

@@ -1,7 +1,7 @@
 void       OnEnvStart();
 void       OnEnvDestroy();
 void       PeerDestructor(void* data);
-int        Crop(IplImage** pointer, char* args);
+int        Crop(IplImage** pointer, char* args, char* gravity);
 int        Resize(IplImage** pointer, char* _args, Config* config, int simple);
 int        PrepareWatermark(Config* cfg, ngx_pool_t* pool);
 int        Watermark(IplImage* image, Config* config);

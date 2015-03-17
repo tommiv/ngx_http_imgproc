@@ -15,7 +15,7 @@ void OnEnvDestroy() {
 	// No op
 }
 
-int Crop(IplImage** pointer, char* _args) {
+int Crop(IplImage** pointer, char* _args, char* gravity) {
 	IplImage* image = *pointer;
 
 	size_t col = image->width;
@@ -33,6 +33,15 @@ int Crop(IplImage** pointer, char* _args) {
 
 	char* whmode;
 	unsigned int windowHeight = strtol(token ? token: "", &whmode, 10);
+
+	int respectGravity = 0;
+	if (gravity != NULL) {
+		if (strlen(gravity) == 3) {
+			respectGravity = 1;
+		} else {
+			return IMP_ERROR_INVALID_ARGS;
+		}
+	}
 
 	if (strcmp(wwmode, "") == 0 && strcmp(whmode, "") == 0) {
 		float px = col;
@@ -58,31 +67,44 @@ int Crop(IplImage** pointer, char* _args) {
 	}
 
 	int windowX;
-	token = strtok_r(NULL, separator, &next);
-	if (token == NULL) {
-		token = "c";
+	if (respectGravity) {
+		token = &gravity[0];
+		token[1] = 0; // I'm so sorry
+	} else {
+		token = strtok_r(NULL, separator, &next);
+		if (token == NULL) {
+			token = "c";
+		}
 	}
-	
+
 	if (strcmp(token, "l") == 0) {
 		windowX = 0;
 	} else if (strcmp(token, "r") == 0) {
 		windowX = col - windowWidth;
-	} else {
+	} else if (strcmp(token, "c") == 0) {
 		windowX = (int)round((col - windowWidth) / 2.0);
+	} else {
+		return IMP_ERROR_INVALID_ARGS;
 	}
 
 	int windowY;
-	token = strtok_r(NULL, separator, &next);
-	if (token == NULL) {
-		token = "t";
+	if (respectGravity) {
+		token = &gravity[2];
+	} else {
+		token = strtok_r(NULL, separator, &next);
+		if (token == NULL) {
+			token = "t";
+		}
 	}
 
 	if (strcmp(token, "t") == 0) {
 		windowY = 0;
 	} else if (strcmp(token, "b") == 0) {
 		windowY = row - windowHeight;
-	} else {
+	} else if (strcmp(token, "c") == 0) {
 		windowY = (int)round((row - windowHeight) / 2.0);
+	} else {
+		return IMP_ERROR_INVALID_ARGS;
 	}
 
 	CvRect region = cvRect(windowX, windowY, windowWidth, windowHeight);
@@ -273,6 +295,7 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	#endif
 
 	char* crop    = NULL;
+	char* gravity = NULL;
 	char* resize  = NULL;
 	char* quality = NULL;
 	char* format  = NULL;
@@ -304,6 +327,8 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 		params = NULL;
 		if (StartsWith(token, "crop")) {
 			crop = RewindArgs(token, "=");
+		} else if (StartsWith(token, "gravity")) {
+			gravity = RewindArgs(token, "=");
 		} else if (StartsWith(token, "resize")) {
 			resize = RewindArgs(token, "=");
 		} else if (StartsWith(token, "quality")) {
@@ -526,7 +551,7 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 		int fid;
 		for (fid = 0; fid  < album.Count; fid ++) {
 			IplImage* image = album.Frames[fid].Image;
-			answer->Code = Crop(&image, crop);
+			answer->Code = Crop(&image, crop, gravity);
 			album.Frames[fid].Image = image;
 			if (answer->Code) {
 				goto finalize;
