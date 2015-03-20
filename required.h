@@ -73,6 +73,7 @@
 
 #define KMEANS_PP_CENTERS 2
 
+#define JPEG_QUALITY_DEFAULT 86
 
 typedef struct {
     int     Code;

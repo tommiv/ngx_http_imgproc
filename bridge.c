@@ -455,7 +455,7 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	if (encodeBasicIO) {
 		if (answer->MIME == IMP_MIME_JPG) {
 			basicCoderopt[0] = CV_IMWRITE_JPEG_QUALITY;
-			int quantizer = 86;
+			int quantizer = JPEG_QUALITY_DEFAULT;
 			if (quality) {
 				quantizer = strtol(quality, NULL, 10);
 			}
@@ -509,6 +509,12 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 				break;
 			}
 		#endif
+	} else { // normalization branch
+		switch(encodeAdvancedIO) {
+			case FIF_JPEG:
+				advancedCoderopt = JPEG_QUALITY_DEFAULT;
+			break;
+		}
 	}
 
 	// Step 2: Decode
