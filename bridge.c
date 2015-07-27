@@ -36,9 +36,10 @@ int Crop(IplImage** pointer, char* _args, char* gravity) {
 
 	int respectGravity = 0;
 	if (gravity != NULL) {
-		if (strlen(gravity) == 3) {
+		if (strlen(gravity) > 2) {
 			respectGravity = 1;
 		} else {
+			free(args);
 			return IMP_ERROR_INVALID_ARGS;
 		}
 	}
@@ -67,9 +68,9 @@ int Crop(IplImage** pointer, char* _args, char* gravity) {
 	}
 
 	int windowX;
+	char* gravNext;
 	if (respectGravity) {
-		token = &gravity[0];
-		token[1] = 0; // I'm so sorry
+		token = strtok_r(gravity, separator, &gravNext);
 	} else {
 		token = strtok_r(NULL, separator, &next);
 		if (token == NULL) {
@@ -96,7 +97,7 @@ int Crop(IplImage** pointer, char* _args, char* gravity) {
 
 	int windowY;
 	if (respectGravity) {
-		token = &gravity[2];
+		token = strtok_r(NULL, separator, &gravNext);
 	} else {
 		token = strtok_r(NULL, separator, &next);
 		if (token == NULL) {
