@@ -15,7 +15,7 @@ Crop arguments include dimensions and gravity. Dimension can be a relative (crop
 
 **Dimensions**. Pair of values in order x-axis,y-axis. Relative values are just positive integers. Absolute values have *px* postfix.
 
-**Gravity**. Pair of chars in order x-axis,y-axis. Optional. Defaults to *c,t*. Options:
+**Gravity**. Pair of values in order x-axis,y-axis. Optional. Can be single char or absolute value with *px* postfix. Defaults to *c,t*. Options:
 
 ```
 c – center
@@ -47,7 +47,7 @@ crop=16,9,l,t
 
 ```
 # absolute values
-crop=400px,200px,c,t
+crop=400px,200px,46px,0px
 ```
 ![Imgur](http://i.imgur.com/XigrLA5.jpg) ![Imgur](http://i.imgur.com/MuJhcmY.jpg)
 

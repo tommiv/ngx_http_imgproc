@@ -84,7 +84,14 @@ int Crop(IplImage** pointer, char* _args, char* gravity) {
 	} else if (strcmp(token, "c") == 0) {
 		windowX = (int)round((col - windowWidth) / 2.0);
 	} else {
-		return IMP_ERROR_INVALID_ARGS;
+		char* xgravmode;
+		unsigned int xgrav = strtol(token ? token : "", &xgravmode, 10);
+		if (strcmp("px", xgravmode) == 0) {
+			windowX = xgrav;
+		} else {
+			free(args);
+			return IMP_ERROR_INVALID_ARGS;
+		}
 	}
 
 	int windowY;
@@ -104,6 +111,18 @@ int Crop(IplImage** pointer, char* _args, char* gravity) {
 	} else if (strcmp(token, "c") == 0) {
 		windowY = (int)round((row - windowHeight) / 2.0);
 	} else {
+		char* ygravmode;
+		unsigned int ygrav = strtol(token ? token : "", &ygravmode, 10);
+		if (strcmp("px", ygravmode) == 0) {
+			windowY = ygrav;
+		} else {
+			free(args);
+			return IMP_ERROR_INVALID_ARGS;
+		}
+	}
+
+	if (windowX + (int)windowWidth > image->width || windowY + (int)windowHeight > image->height) {
+		free(args);
 		return IMP_ERROR_INVALID_ARGS;
 	}
 
