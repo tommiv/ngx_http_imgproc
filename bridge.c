@@ -607,6 +607,16 @@ JobResult* RunJob(u_char* blob, size_t size, ngx_http_request_t* req, Config* co
 	int i, fid;
 	for (fid = 0; fid < album.Count; fid++) {
 		IplImage* image = album.Frames[fid].Image;
+		
+		// most of the filters makes no sense for 1-channel images;
+		// #todo: convert only when it's need
+		if (image->nChannels == 1) {
+			IplImage* colored = cvCreateImage(cvSize(image->width, image->height), image->depth, 3);
+			cvCvtColor(image, colored, CV_GRAY2BGR);
+			cvReleaseImage(&image);
+			image = colored;
+		}
+
 		for (i = 0; i < filterCount; i++) {
 			answer->Code = Filter(&image, filters[i], config->AllowExperiments);
 			if (answer->Code) {
